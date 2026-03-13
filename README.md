@@ -14,10 +14,27 @@ Async-first .NET 10 client library for [Azure Dev Tunnels](https://aka.ms/devtun
 
 ## Requirements
 
-The `devtunnel` CLI must be installed and on `PATH`. Install via winget:
+The `devtunnel` CLI must be installed. The library searches the following locations in order:
+
+1. `DevTunnelsClientOptions.CliPathOverride` — explicit path set in code
+2. `DEVTUNNEL_CLI_PATH` environment variable
+3. Well-known install paths (checked by default, no PATH entry required):
+   - **Windows** — `%LOCALAPPDATA%\Microsoft\DevTunnels\`, `~/.devtunnels/bin/`, `~/bin/`
+   - **macOS** — `/opt/homebrew/bin/` (Homebrew), `/usr/local/bin/`, `~/bin/`
+   - **Linux** — `~/.local/bin/`, `~/bin/`, `/usr/local/bin/`
+4. System `PATH`
+
+**Install:**
 
 ```bash
+# Windows
 winget install Microsoft.DevTunnel
+
+# macOS
+brew install devtunnel
+
+# Linux / other
+curl -sL https://aka.ms/DevTunnelCliInstall | bash
 ```
 
 Or follow the [official install guide](https://learn.microsoft.com/azure/developer/dev-tunnels/get-started).
@@ -141,10 +158,6 @@ builder.Services.AddDevTunnelsClient(options =>
 var result = await client.ExecuteRawAsync(["user", "show", "--json", "--nologo"]);
 Console.WriteLine(result.StandardOutput);
 ```
-
-## Overriding the CLI Path
-
-Set the `DEVTUNNEL_CLI_PATH` environment variable to point to a specific `devtunnel` binary instead of relying on `PATH` discovery.
 
 ## Repository Layout
 

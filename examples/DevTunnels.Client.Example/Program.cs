@@ -617,13 +617,13 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
         // Explicit IPv4 loopback — "localhost" can resolve to IPv6 ::1 on some
         // Windows configurations, while devtunnel's SSH port-forwarder connects
         // to 127.0.0.1 (IPv4). Binding to 127.0.0.1 directly avoids this mismatch.
-        webBuilder.WebHost.UseUrls($"http://127.0.0.1:{localPort}");
-        webBuilder.Logging.ClearProviders(); // keep Kestrel startup noise off the CLI
+        _ = webBuilder.WebHost.UseUrls($"http://127.0.0.1:{localPort}");
+        _ = webBuilder.Logging.ClearProviders(); // keep Kestrel startup noise off the CLI
 
         webhookApp = webBuilder.Build();
 
 #pragma warning disable ASP0018 // Unused route parameter
-        webhookApp.MapMethods("/{**catchAll}",
+        _ = webhookApp.MapMethods("/{**catchAll}",
             ["GET", "POST", "PUT", "PATCH", "DELETE"],
             async (HttpRequest req) =>
             {
@@ -636,7 +636,9 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 
                 var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (KeyValuePair<string, StringValues> h in req.Headers)
+                {
                     headers[h.Key] = h.Value.ToString();
+                }
 
                 DisplayIncomingWebhook(req.Method, req.Path.ToString(), headers, body, req.ContentType);
 
@@ -901,7 +903,11 @@ static string FormatWebhookBody(string body, string? contentType)
         foreach (string pair in body.Split('&'))
         {
             int eq = pair.IndexOf('=');
-            if (eq <= 0) continue;
+            if (eq <= 0)
+            {
+                continue;
+            }
+
             string key = Uri.UnescapeDataString(pair[..eq].Replace('+', ' '));
             string value = Uri.UnescapeDataString(pair[(eq + 1)..].Replace('+', ' '));
             if (key.Equals("data", StringComparison.OrdinalIgnoreCase))

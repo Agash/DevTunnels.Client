@@ -42,7 +42,11 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         {
             if (LooksLikePath(candidate) && !File.Exists(candidate))
             {
-                _logger.LogDebug("Skipping devtunnel candidate path '{Candidate}' because the file does not exist.", candidate);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Skipping devtunnel candidate path '{Candidate}' because the file does not exist.", candidate);
+                }
+
                 continue;
             }
 
@@ -331,7 +335,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         throw lastException ?? new InvalidOperationException("Retry loop ended without an exception.");
     }
 
-    private T Deserialize<T>(DevTunnelCommandResult result, JsonTypeInfo<T> typeInfo, string operationDescription, string? propertyName = null)
+    private static T Deserialize<T>(DevTunnelCommandResult result, JsonTypeInfo<T> typeInfo, string operationDescription, string? propertyName = null)
     {
         string payload = result.StandardOutput.Trim();
         if (string.IsNullOrWhiteSpace(payload))

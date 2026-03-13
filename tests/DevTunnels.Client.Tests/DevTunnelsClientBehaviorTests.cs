@@ -6,6 +6,21 @@ namespace DevTunnels.Client.Tests;
 [TestClass]
 public sealed class DevTunnelsClientBehaviorTests
 {
+    // Expected CLI argument sequences extracted to static readonly fields (CA1861).
+    private static readonly string[] s_expectedCreateArgs =
+        ["create", "streamweaver-webhooks-01", "--description", "updated", "--allow-anonymous", "--labels", "sw", "--json", "--nologo"];
+
+    private static readonly string[] s_expectedUpdateArgs =
+        ["update", "streamweaver-webhooks-01", "--description", "updated", "--add-labels", "sw", "--json", "--nologo"];
+
+    private static readonly string[] s_expectedPortUpdateArgs =
+        ["port", "update", "sw-01", "--port-number", "5000", "--description", "updated desc", "--add-labels", "v2", "--json", "--nologo"];
+
+    private static readonly string[] s_expectedTokenArgs =
+        ["token", "sw-01", "--scopes", "connect", "--nologo"];
+
+    public TestContext TestContext { get; set; } = null!;
+
     [TestMethod]
     public async Task CreateOrUpdateTunnelAsync_WhenTunnelExists_UpdatesAndReconcilesAccess()
     {
@@ -29,12 +44,13 @@ public sealed class DevTunnelsClientBehaviorTests
                 Description = "updated",
                 AllowAnonymous = true,
                 Labels = ["sw"]
-            });
+            },
+            TestContext.CancellationToken);
 
         Assert.AreEqual("streamweaver-webhooks-01", result.TunnelId);
         Assert.HasCount(4, executor.RunInvocations);
-        CollectionAssert.AreEqual(new string[] { "create", "streamweaver-webhooks-01", "--description", "updated", "--allow-anonymous", "--labels", "sw", "--json", "--nologo" }, executor.RunInvocations[0].Arguments.ToArray());
-        CollectionAssert.AreEqual(new string[] { "update", "streamweaver-webhooks-01", "--description", "updated", "--add-labels", "sw", "--json", "--nologo" }, executor.RunInvocations[1].Arguments.ToArray());
+        CollectionAssert.AreEqual(s_expectedCreateArgs, executor.RunInvocations[0].Arguments.ToArray());
+        CollectionAssert.AreEqual(s_expectedUpdateArgs, executor.RunInvocations[1].Arguments.ToArray());
     }
 
     [TestMethod]
@@ -48,7 +64,7 @@ public sealed class DevTunnelsClientBehaviorTests
             NullLogger<DevTunnelsClient>.Instance,
             executor);
 
-        DevTunnelLoginStatus status = await client.EnsureLoggedInAsync();
+        DevTunnelLoginStatus status = await client.EnsureLoggedInAsync(cancellationToken: TestContext.CancellationToken);
 
         Assert.IsTrue(status.IsLoggedIn);
         Assert.AreEqual(LoginProvider.GitHub, status.Provider);
@@ -69,13 +85,12 @@ public sealed class DevTunnelsClientBehaviorTests
         DevTunnelPortStatus result = await client.UpdatePortAsync(
             "sw-01",
             5000,
-            new DevTunnelPortOptions { Description = "updated desc", Labels = ["v2"] });
+            new DevTunnelPortOptions { Description = "updated desc", Labels = ["v2"] },
+            TestContext.CancellationToken);
 
         Assert.AreEqual(5000, result.PortNumber);
         Assert.HasCount(1, executor.RunInvocations);
-        CollectionAssert.AreEqual(
-            new string[] { "port", "update", "sw-01", "--port-number", "5000", "--description", "updated desc", "--add-labels", "v2", "--json", "--nologo" },
-            executor.RunInvocations[0].Arguments.ToArray());
+        CollectionAssert.AreEqual(s_expectedPortUpdateArgs, executor.RunInvocations[0].Arguments.ToArray());
     }
 
     [TestMethod]
@@ -91,13 +106,11 @@ public sealed class DevTunnelsClientBehaviorTests
             NullLogger<DevTunnelsClient>.Instance,
             executor);
 
-        string token = await client.GetAccessTokenAsync("sw-01");
+        string token = await client.GetAccessTokenAsync("sw-01", cancellationToken: TestContext.CancellationToken);
 
         Assert.AreEqual("eyJhbGciOiJSUzI1NiJ9.test.sig", token);
         Assert.HasCount(1, executor.RunInvocations);
-        CollectionAssert.AreEqual(
-            new string[] { "token", "sw-01", "--scopes", "connect", "--nologo" },
-            executor.RunInvocations[0].Arguments.ToArray());
+        CollectionAssert.AreEqual(s_expectedTokenArgs, executor.RunInvocations[0].Arguments.ToArray());
     }
 
     [TestMethod]
@@ -112,15 +125,14 @@ public sealed class DevTunnelsClientBehaviorTests
             NullLogger<DevTunnelsClient>.Instance,
             executor);
 
-        IDevTunnelHostSession session = await client.StartHostSessionAsync(new DevTunnelHostStartOptions
-        {
-            TunnelId = "streamweaver-webhooks-01"
-        });
+        IDevTunnelHostSession session = await client.StartHostSessionAsync(
+            new DevTunnelHostStartOptions { TunnelId = "streamweaver-webhooks-01" },
+            TestContext.CancellationToken);
 
         runningProcess.EmitStdOut("Tunnel ID: streamweaver-webhooks-01");
         runningProcess.EmitStdOut("Hosting at https://abc123.devtunnels.ms");
 
-        await session.WaitForReadyAsync();
+        await session.WaitForReadyAsync(TestContext.CancellationToken);
 
         Assert.AreEqual(DevTunnelHostState.Running, session.State);
         Assert.AreEqual("streamweaver-webhooks-01", session.TunnelId);
@@ -142,22 +154,21 @@ public sealed class DevTunnelsClientBehaviorTests
             NullLogger<DevTunnelsClient>.Instance,
             executor);
 
-        IDevTunnelHostSession session = await client.StartHostSessionAsync(new DevTunnelHostStartOptions
-        {
-            TunnelId = "streamweaver-webhooks-01"
-        });
+        IDevTunnelHostSession session = await client.StartHostSessionAsync(
+            new DevTunnelHostStartOptions { TunnelId = "streamweaver-webhooks-01" },
+            TestContext.CancellationToken);
 
         runningProcess.EmitStdOut("Hosting port: 5000");
         runningProcess.EmitStdOut("Connect via browser: https://jndfqj07.euw.devtunnels.ms:5000, https://jndfqj07-5000.euw.devtunnels.ms");
         runningProcess.EmitStdOut("Inspect network activity: https://jndfqj07-5000-inspect.euw.devtunnels.ms");
         runningProcess.EmitStdOut("Ready to accept connections for tunnel: streamweaver-webhooks-01.euw");
 
-        await session.WaitForReadyAsync();
+        await session.WaitForReadyAsync(TestContext.CancellationToken);
 
         Assert.AreEqual(DevTunnelHostState.Running, session.State);
         // Must be the standard-port hostname-embedded URL, NOT the explicit-port or inspect URL.
         // Webhook providers (Ko-fi, Patreon, etc.) reject URLs with explicit non-standard ports.
         Assert.AreEqual(new Uri("https://jndfqj07-5000.euw.devtunnels.ms"), session.PublicUrl);
-        Assert.IsFalse(session.PublicUrl!.ToString().Contains("-inspect."), "PublicUrl must not be the inspect URL");
+        Assert.DoesNotContain("-inspect.", session.PublicUrl!.ToString(), "PublicUrl must not be the inspect URL");
     }
 }

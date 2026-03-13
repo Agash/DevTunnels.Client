@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -40,9 +41,20 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers <see cref="IDevTunnelsClient" /> and binds options from configuration.
     /// </summary>
+    /// <remarks>
+    /// This overload uses reflection-based configuration binding and is not AOT-compatible.
+    /// Use <see cref="AddDevTunnelsClient(IServiceCollection, Action{DevTunnelsClientOptions})" />
+    /// for trimming- and AOT-safe registration.
+    /// </remarks>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The configuration section or root to bind.</param>
     /// <returns>The same service collection for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Binding DevTunnelsClientOptions from IConfiguration uses reflection. " +
+        "Use the Action<DevTunnelsClientOptions> overload for AOT-compatible configuration.")]
+    [RequiresDynamicCode(
+        "Binding DevTunnelsClientOptions from IConfiguration may require runtime code generation. " +
+        "Use the Action<DevTunnelsClientOptions> overload for AOT-compatible configuration.")]
     public static IServiceCollection AddDevTunnelsClient(
         this IServiceCollection services,
         IConfiguration configuration)

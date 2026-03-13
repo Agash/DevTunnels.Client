@@ -7,6 +7,7 @@
     <Description>Dependency injection extensions for DevTunnels.Client.</Description>
     <PackageTags>azure devtunnels devtunnel di dependency-injection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsAotCompatible>true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EnablePackageValidation>true</EnablePackageValidation>
     <MinVerTagPrefix>v</MinVerTagPrefix>

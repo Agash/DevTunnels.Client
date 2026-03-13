@@ -5,8 +5,9 @@
     <RootNamespace>DevTunnels.Client</RootNamespace>
     <PackageId>DevTunnels.Client</PackageId>
     <Description>Async-first .NET 10 client primitives for Azure Dev Tunnels CLI discovery, validation, and host-owned tunnel orchestration.</Description>
-    <PackageTags>azure devtunnels devtunnel tunnel cli webhooks desktop streamweaver</PackageTags>
+    <PackageTags>azure devtunnels devtunnel tunnel cli webhooks desktop</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsAotCompatible>true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EnablePackageValidation>true</EnablePackageValidation>
     <MinVerTagPrefix>v</MinVerTagPrefix>

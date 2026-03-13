@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using DevTunnels.Client.Internal;
 using Microsoft.Extensions.Logging;
 
@@ -14,10 +14,6 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     private readonly ILogger<DevTunnelsClient> _logger;
     private readonly DevTunnelCli _cli;
     private readonly SemaphoreSlim _loginGate = new(1, 1);
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new JsonStringEnumConverter() }
-    };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DevTunnelsClient" /> class.
@@ -81,7 +77,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await ExecuteRawAsync(["user", "show", "--json", "--nologo"], cancellationToken: cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, "get the current login status");
-        return Deserialize<DevTunnelLoginStatus>(result, "login status");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelLoginStatus, "login status");
     }
 
     /// <inheritdoc />
@@ -128,7 +124,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.ListTunnelsAsync(cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, "list tunnels");
-        return Deserialize<DevTunnelList>(result, "tunnel list");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelList, "tunnel list");
     }
 
     /// <inheritdoc />
@@ -141,14 +137,14 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
             DevTunnelCommandResult createResult = await _cli.CreateTunnelAsync(tunnelId, options, ct).ConfigureAwait(false);
             if (createResult.ExitCode == 0)
             {
-                return Deserialize<DevTunnelStatus>(createResult, "tunnel", "tunnel");
+                return Deserialize(createResult, DevTunnelsJsonSerializerContext.Default.DevTunnelStatus, "tunnel", "tunnel");
             }
 
             if (createResult.ExitCode == DevTunnelCli.ResourceConflictsWithExistingExitCode)
             {
                 DevTunnelCommandResult updateResult = await _cli.UpdateTunnelAsync(tunnelId, options, ct).ConfigureAwait(false);
                 EnsureSuccess(updateResult, $"update tunnel '{tunnelId}'");
-                DevTunnelStatus updated = Deserialize<DevTunnelStatus>(updateResult, "tunnel", "tunnel");
+                DevTunnelStatus updated = Deserialize(updateResult, DevTunnelsJsonSerializerContext.Default.DevTunnelStatus, "tunnel", "tunnel");
 
                 DevTunnelCommandResult resetResult = await _cli.ResetAccessAsync(tunnelId, null, ct).ConfigureAwait(false);
                 EnsureSuccess(resetResult, $"reset access for tunnel '{tunnelId}'");
@@ -171,7 +167,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.ShowTunnelAsync(tunnelId, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"get tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelStatus>(result, "tunnel", "tunnel");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelStatus, "tunnel", "tunnel");
     }
 
     /// <inheritdoc />
@@ -179,7 +175,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.DeleteTunnelAsync(tunnelId, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"delete tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelDeleteResult>(result, "delete tunnel result");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelDeleteResult, "delete tunnel result");
     }
 
     /// <inheritdoc />
@@ -187,7 +183,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.ListPortsAsync(tunnelId, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"list ports for tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelPortList>(result, "port list");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelPortList, "port list");
     }
 
     /// <inheritdoc />
@@ -206,7 +202,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
             }
 
             EnsureSuccess(createResult, $"create port '{portNumber}' on tunnel '{tunnelId}'");
-            DevTunnelPortStatus status = Deserialize<DevTunnelPortStatus>(createResult, "port status");
+            DevTunnelPortStatus status = Deserialize(createResult, DevTunnelsJsonSerializerContext.Default.DevTunnelPortStatus, "port status");
 
             if (options.AllowAnonymous.HasValue)
             {
@@ -229,7 +225,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.DeletePortAsync(tunnelId, portNumber, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"delete port '{portNumber}' on tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelPortDeleteResult>(result, "delete port result");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelPortDeleteResult, "delete port result");
     }
 
     /// <inheritdoc />
@@ -237,7 +233,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.ListAccessAsync(tunnelId, portNumber, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"list access for tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelAccessStatus>(result, "access status");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelAccessStatus, "access status");
     }
 
     /// <inheritdoc />
@@ -245,7 +241,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.ResetAccessAsync(tunnelId, portNumber, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"reset access for tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelAccessStatus>(result, "access status");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelAccessStatus, "access status");
     }
 
     /// <inheritdoc />
@@ -253,7 +249,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelCommandResult result = await _cli.CreateAccessAsync(tunnelId, portNumber, anonymous, deny, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"create access entry for tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelAccessStatus>(result, "access status");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelAccessStatus, "access status");
     }
 
     /// <inheritdoc />
@@ -262,7 +258,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         ValidatePortInput(tunnelId, portNumber, options);
         DevTunnelCommandResult result = await _cli.UpdatePortAsync(tunnelId, portNumber, options, cancellationToken).ConfigureAwait(false);
         EnsureSuccess(result, $"update port '{portNumber}' on tunnel '{tunnelId}'");
-        return Deserialize<DevTunnelPortStatus>(result, "update port status");
+        return Deserialize(result, DevTunnelsJsonSerializerContext.Default.DevTunnelPortStatus, "update port status");
     }
 
     /// <inheritdoc />
@@ -335,7 +331,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         throw lastException ?? new InvalidOperationException("Retry loop ended without an exception.");
     }
 
-    private T Deserialize<T>(DevTunnelCommandResult result, string operationDescription, string? propertyName = null)
+    private T Deserialize<T>(DevTunnelCommandResult result, JsonTypeInfo<T> typeInfo, string operationDescription, string? propertyName = null)
     {
         string payload = result.StandardOutput.Trim();
         if (string.IsNullOrWhiteSpace(payload))
@@ -347,10 +343,11 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         {
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
-                payload = JsonDocument.Parse(payload).RootElement.GetProperty(propertyName).GetRawText();
+                using JsonDocument doc = JsonDocument.Parse(payload);
+                payload = doc.RootElement.GetProperty(propertyName).GetRawText();
             }
 
-            T? value = JsonSerializer.Deserialize<T>(payload, _jsonOptions);
+            T? value = JsonSerializer.Deserialize(payload, typeInfo);
             return value ?? throw new DevTunnelsCliException($"The devtunnel CLI returned JSON that could not be deserialized while attempting to {operationDescription}.", result);
         }
         catch (JsonException ex)

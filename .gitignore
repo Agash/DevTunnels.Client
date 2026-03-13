@@ -3,6 +3,7 @@ obj/
 .vs/
 .idea/
 artifacts/
+nuget/
 TestResults/
 coverage/
 *.coverage

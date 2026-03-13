@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace DevTunnels.Client;
 
 /// <summary>
 /// Supported interactive identity providers for the Azure Dev Tunnels CLI login flow.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<LoginProvider>))]
 public enum LoginProvider
 {
     /// <summary>

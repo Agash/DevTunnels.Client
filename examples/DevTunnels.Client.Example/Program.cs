@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Spectre.Console;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -621,6 +622,7 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 
         webhookApp = webBuilder.Build();
 
+#pragma warning disable ASP0018 // Unused route parameter
         webhookApp.MapMethods("/{**catchAll}",
             ["GET", "POST", "PUT", "PATCH", "DELETE"],
             async (HttpRequest req) =>
@@ -633,13 +635,14 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
                 }
 
                 var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var h in req.Headers)
+                foreach (KeyValuePair<string, StringValues> h in req.Headers)
                     headers[h.Key] = h.Value.ToString();
 
                 DisplayIncomingWebhook(req.Method, req.Path.ToString(), headers, body, req.ContentType);
 
-                return Results.Json(new { status = "ok" });
+                return Results.Content("{\"status\":\"ok\"}", "application/json");
             });
+#pragma warning restore ASP0018 // Unused route parameter
 
         await webhookApp.StartAsync().ConfigureAwait(false);
         AnsiConsole.MarkupLine($"  [green]✓[/] Local webhook receiver on [bold]http://localhost:{localPort}/[/]");
@@ -864,7 +867,7 @@ static void DisplayIncomingWebhook(string method, string path, Dictionary<string
     AnsiConsole.Write(new Rule($"[bold yellow]↓ {method} {Markup.Escape(path)}[/]").RuleStyle(Style.Parse("yellow dim")));
 
     // Show Content-Type and any X-* headers (signatures, etc.)
-    foreach (var (key, value) in headers)
+    foreach ((string? key, string? value) in headers)
     {
         if (key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
             || key.StartsWith("X-", StringComparison.OrdinalIgnoreCase)
@@ -917,7 +920,11 @@ static string? TryPrettyPrintJson(string input)
     try
     {
         using JsonDocument doc = JsonDocument.Parse(input.Trim());
-        return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions { WriteIndented = true });
+        using var stream = new MemoryStream();
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        doc.RootElement.WriteTo(writer);
+        writer.Flush();
+        return Encoding.UTF8.GetString(stream.ToArray());
     }
     catch
     {

@@ -4,8 +4,8 @@
     <AssemblyName>DevTunnels.Client</AssemblyName>
     <RootNamespace>DevTunnels.Client</RootNamespace>
     <PackageId>DevTunnels.Client</PackageId>
-    <Description>Async-first .NET 10 client primitives for Azure Dev Tunnels CLI discovery, validation, and host-owned tunnel orchestration.</Description>
-    <PackageTags>azure devtunnels devtunnel tunnel cli webhooks desktop</PackageTags>
+    <Description>Async-first .NET 10 client for Azure Dev Tunnels. Typed, cancellation-aware wrapper around the devtunnel CLI covering tunnel and port management, access control, login (GitHub and Microsoft), host sessions with live public-URL tracking, and scoped access tokens. AOT- and trimming-compatible.</Description>
+    <PackageTags>azure devtunnels devtunnel tunnel localhost-tunnel reverse-tunnel webhook cli dotnet csharp aot microsoft-extensions net10</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsAotCompatible>true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

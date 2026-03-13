@@ -4,8 +4,9 @@
     <AssemblyName>DevTunnels.Client.DependencyInjection</AssemblyName>
     <RootNamespace>DevTunnels.Client.DependencyInjection</RootNamespace>
     <PackageId>DevTunnels.Client.DependencyInjection</PackageId>
-    <Description>Dependency injection extensions for DevTunnels.Client.</Description>
-    <PackageTags>azure devtunnels devtunnel di dependency-injection</PackageTags>
+    <Title>DevTunnels.Client — Dependency Injection</Title>
+    <Description>IServiceCollection registration helpers for DevTunnels.Client. Adds IDevTunnelsClient as a singleton via AddDevTunnelsClient() with AOT-safe Action&lt;T&gt; configuration or reflection-based IConfiguration binding.</Description>
+    <PackageTags>azure devtunnels devtunnel tunnel di dependency-injection iservicecollection dotnet csharp aot microsoft-extensions net10</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IsAotCompatible>true</IsAotCompatible>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

@@ -1,0 +1,26 @@
+bin/
+obj/
+.vs/
+.idea/
+artifacts/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+*.nupkg
+*.snupkg
+*.user
+*.suo
+*.rsuser
+.DS_Store
+Thumbs.db
+logs/
+*.local.json
+
+# Agentic/AI coding session artifacts
+.agents/
+.codex/
+AGENTS.md
+ARCHITECTURE.md
+docs/

@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/DevTunnels.Client.Example/DevTunnels.Client.Example.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="LICENSE.txt" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/DevTunnels.Client.DependencyInjection/DevTunnels.Client.DependencyInjection.csproj" />
+    <Project Path="src/DevTunnels.Client/DevTunnels.Client.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DevTunnels.Client.Tests/DevTunnels.Client.Tests.csproj" />
+  </Folder>
+</Solution>

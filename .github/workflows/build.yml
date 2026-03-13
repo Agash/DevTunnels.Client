@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Build, Test, and Publish DevTunnels.Client
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace }}/nuget
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build_and_test:
+    name: Build, Test, and Pack
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore DevTunnels.Client.slnx
+
+    - name: Build solution
+      run: dotnet build DevTunnels.Client.slnx --configuration Release --no-restore
+
+    - name: Run unit tests
+      run: dotnet test tests/DevTunnels.Client.Tests/DevTunnels.Client.Tests.csproj --configuration Release --no-build --verbosity normal
+
+    - name: Pack packages
+      if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'release'
+      run: |
+        dotnet pack src/DevTunnels.Client/DevTunnels.Client.csproj --configuration Release --no-build --output ${{ env.NuGetDirectory }}
+        dotnet pack src/DevTunnels.Client.DependencyInjection/DevTunnels.Client.DependencyInjection.csproj --configuration Release --no-build --output ${{ env.NuGetDirectory }}
+
+    - name: Upload package artifacts
+      if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        if-no-files-found: error
+        retention-days: 7
+        path: ${{ env.NuGetDirectory }}/*.nupkg
+
+  publish_nuget:
+    name: Publish NuGet Package
+    needs: [ build_and_test ]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Download NuGet package artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-package
+        path: ${{ env.NuGetDirectory }}
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+
+    - name: NuGet login
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: Agash
+
+    - name: Publish packages
+      run: |
+        foreach($file in (Get-ChildItem "${{ env.NuGetDirectory }}" -Recurse -Include *.nupkg)) {
+            Write-Host "Pushing package: $($file.FullName)"
+            dotnet nuget push $file --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        }

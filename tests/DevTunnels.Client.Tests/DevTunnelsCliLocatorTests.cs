@@ -1,4 +1,4 @@
-using DevTunnels.Client.Internal;
+using DevTunnels.Client.Internal.Cli;
 
 namespace DevTunnels.Client.Tests;
 

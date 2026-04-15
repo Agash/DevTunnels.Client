@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Tunnels;
 
 /// <summary>
 /// Configures tunnel create or update operations.

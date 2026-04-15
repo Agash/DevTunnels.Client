@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Ports;
 
 /// <summary>
 /// Represents a single Dev Tunnel port.

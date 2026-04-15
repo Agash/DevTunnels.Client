@@ -1,4 +1,8 @@
 using System.Text.Json.Serialization;
+using DevTunnels.Client.Access;
+using DevTunnels.Client.Authentication;
+using DevTunnels.Client.Ports;
+using DevTunnels.Client.Tunnels;
 
 namespace DevTunnels.Client.Internal;
 

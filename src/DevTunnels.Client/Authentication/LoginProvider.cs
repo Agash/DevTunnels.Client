@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Authentication;
 
 /// <summary>
 /// Supported interactive identity providers for the Azure Dev Tunnels CLI login flow.

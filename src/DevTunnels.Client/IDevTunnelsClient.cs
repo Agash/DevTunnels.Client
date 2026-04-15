@@ -1,3 +1,9 @@
+using DevTunnels.Client.Access;
+using DevTunnels.Client.Authentication;
+using DevTunnels.Client.Hosting;
+using DevTunnels.Client.Ports;
+using DevTunnels.Client.Tunnels;
+
 namespace DevTunnels.Client;
 
 /// <summary>

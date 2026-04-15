@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Hosting;
 
 /// <summary>
 /// Represents a long-running <c>devtunnel host</c> process managed by the client library.

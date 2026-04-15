@@ -1,7 +1,8 @@
-using System.Diagnostics;
 using System.Text;
+using SysProcess = System.Diagnostics.Process;
+using SysProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 
-namespace DevTunnels.Client.Internal;
+namespace DevTunnels.Client.Internal.Process;
 
 internal sealed class SystemProcessExecutor : IProcessExecutor
 {
@@ -17,7 +18,7 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
 
     private static Task<SystemRunningProcess> StartInternalAsync(ProcessSpec processSpec, CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo
+        var startInfo = new SysProcessStartInfo
         {
             FileName = processSpec.FileName,
             UseShellExecute = processSpec.UseShellExecute,
@@ -39,7 +40,7 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
             startInfo.StandardErrorEncoding = processSpec.StandardErrorEncoding ?? Encoding.UTF8;
         }
 
-        var process = new Process
+        var process = new SysProcess
         {
             StartInfo = startInfo,
             EnableRaisingEvents = true
@@ -57,13 +58,13 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
 
     private sealed class SystemRunningProcess : IRunningProcess
     {
-        private readonly Process _process;
+        private readonly SysProcess _process;
         private readonly Task _stdoutPump;
         private readonly Task _stderrPump;
         private readonly TaskCompletionSource _exitTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private CancellationTokenRegistration _cancellationRegistration;
 
-        public SystemRunningProcess(Process process, bool useShellExecute)
+        public SystemRunningProcess(SysProcess process, bool useShellExecute)
         {
             _process = process;
             StandardOutput = new StringBuilder();

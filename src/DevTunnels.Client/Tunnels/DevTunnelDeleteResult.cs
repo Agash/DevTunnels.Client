@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Tunnels;
 
 /// <summary>
 /// Represents the result of deleting a tunnel.

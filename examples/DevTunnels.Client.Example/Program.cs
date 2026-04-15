@@ -1,7 +1,12 @@
 using System.Text;
 using System.Text.Json;
 using DevTunnels.Client;
+using DevTunnels.Client.Access;
+using DevTunnels.Client.Authentication;
 using DevTunnels.Client.DependencyInjection;
+using DevTunnels.Client.Hosting;
+using DevTunnels.Client.Ports;
+using DevTunnels.Client.Tunnels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

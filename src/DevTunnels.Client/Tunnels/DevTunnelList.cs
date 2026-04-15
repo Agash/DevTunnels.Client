@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Tunnels;
 
 /// <summary>
 /// Represents the list of tunnels returned by <c>devtunnel list</c>.

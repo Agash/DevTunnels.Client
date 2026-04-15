@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Ports;
 
 /// <summary>
 /// Represents the result of deleting a tunnel port.

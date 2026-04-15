@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Access;
 
 /// <summary>
 /// Represents the access rules currently applied to a tunnel or tunnel port.

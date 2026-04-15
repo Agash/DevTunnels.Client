@@ -1,4 +1,4 @@
-namespace DevTunnels.Client.Internal;
+namespace DevTunnels.Client.Internal.Cli;
 
 internal static class DevTunnelVersionParser
 {

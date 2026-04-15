@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Access;
 
 /// <summary>
 /// Represents a single access control entry returned by the CLI.

@@ -1,4 +1,10 @@
+using DevTunnels.Client.Authentication;
+using DevTunnels.Client.Hosting;
 using DevTunnels.Client.Internal;
+using DevTunnels.Client.Internal.Cli;
+using DevTunnels.Client.Internal.Process;
+using DevTunnels.Client.Ports;
+using DevTunnels.Client.Tunnels;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DevTunnels.Client.Tests;

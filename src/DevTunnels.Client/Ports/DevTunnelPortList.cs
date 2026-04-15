@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Ports;
 
 /// <summary>
 /// Represents the list of ports attached to a tunnel.

@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using DevTunnels.Client.Hosting;
+using DevTunnels.Client.Internal.Process;
 using Microsoft.Extensions.Logging;
 
 namespace DevTunnels.Client.Internal;

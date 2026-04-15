@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Authentication;
 
 /// <summary>
 /// Typed login status returned by the Azure Dev Tunnels CLI.

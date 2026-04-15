@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Ports;
 
 /// <summary>
 /// Configures tunnel port create or update operations.

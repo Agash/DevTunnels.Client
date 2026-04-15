@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Hosting;
 
 /// <summary>
 /// Configures host-session startup for the long-running <c>devtunnel host</c> command.

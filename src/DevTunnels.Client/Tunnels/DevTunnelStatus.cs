@@ -1,4 +1,6 @@
-namespace DevTunnels.Client;
+using DevTunnels.Client.Ports;
+
+namespace DevTunnels.Client.Tunnels;
 
 /// <summary>
 /// Represents a Dev Tunnel returned by the CLI.

@@ -1,8 +1,12 @@
 using System.Globalization;
 using System.Text;
+using DevTunnels.Client.Hosting;
+using DevTunnels.Client.Internal.Process;
+using DevTunnels.Client.Ports;
+using DevTunnels.Client.Tunnels;
 using Microsoft.Extensions.Logging;
 
-namespace DevTunnels.Client.Internal;
+namespace DevTunnels.Client.Internal.Cli;
 
 internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExecutor processExecutor, ILogger logger)
 {

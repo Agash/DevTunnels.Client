@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Hosting;
 
 /// <summary>
 /// Represents the lifecycle state of a running host session.

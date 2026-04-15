@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Hosting;
 
 /// <summary>
 /// Provides data for the <see cref="IDevTunnelHostSession.OutputReceived"/> event.

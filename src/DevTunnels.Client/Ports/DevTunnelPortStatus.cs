@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Ports;
 
 /// <summary>
 /// Represents the status returned after creating or updating a tunnel port.

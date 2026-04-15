@@ -1,4 +1,4 @@
-namespace DevTunnels.Client.Internal;
+namespace DevTunnels.Client.Internal.Process;
 
 internal interface IRunningProcess : IAsyncDisposable
 {

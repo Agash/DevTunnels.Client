@@ -1,3 +1,5 @@
+using DevTunnels.Client.Authentication;
+
 namespace DevTunnels.Client;
 
 /// <summary>

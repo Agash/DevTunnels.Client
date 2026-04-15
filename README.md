@@ -24,14 +24,36 @@ The `devtunnel` CLI must be installed. The library searches the following locati
    - **Linux** — `~/.local/bin/`, `~/bin/`, `/usr/local/bin/`
 4. System `PATH`
 
-**Install:**
+**Minimum CLI version: 1.0.1435**
+
+The library enforces this at startup. If the installed CLI is older, `ProbeCliAsync()` returns
+`MeetsMinimumVersion = false` and operations that require the CLI will throw.
+
+Check your installed version:
+
+```bash
+devtunnel --version
+# expected output: Tunnel CLI version: 1.0.1435+<commit>
+```
+
+> The library was developed and integration-tested against **1.0.1435**. Later versions are
+> expected to be compatible; earlier versions are not supported.
+>
+> The minimum can be overridden per-instance via `DevTunnelsClientOptions.MinimumSupportedVersion`
+> if you need to pin a different floor.
+
+**Install / update:**
 
 ```bash
 # Windows
 winget install Microsoft.DevTunnel
+# or update an existing install:
+winget upgrade Microsoft.DevTunnel
 
 # macOS
 brew install devtunnel
+# or update:
+brew upgrade devtunnel
 
 # Linux / other
 curl -sL https://aka.ms/DevTunnelCliInstall | bash

@@ -18,14 +18,3 @@ internal sealed record ProcessSpec(
     Encoding? StandardErrorEncoding = null);
 
 internal sealed record ProcessExecutionResult(int ExitCode, string StandardOutput, string StandardError);
-
-internal interface IRunningProcess : IAsyncDisposable
-{
-    event Action<bool, string>? OutputReceived;
-
-    int? ExitCode { get; }
-
-    Task WaitForExitAsync(CancellationToken cancellationToken);
-
-    Task StopAsync(CancellationToken cancellationToken);
-}

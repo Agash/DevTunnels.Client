@@ -1,4 +1,4 @@
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Internal;
 
 internal static class DevTunnelsCliLocator
 {

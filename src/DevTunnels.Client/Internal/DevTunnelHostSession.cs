@@ -1,8 +1,7 @@
 using System.Text.RegularExpressions;
-using DevTunnels.Client.Internal;
 using Microsoft.Extensions.Logging;
 
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Internal;
 
 internal sealed partial class DevTunnelHostSession : IDevTunnelHostSession
 {

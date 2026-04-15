@@ -1,3 +1,5 @@
+using DevTunnels.Client.Internal;
+
 namespace DevTunnels.Client.Tests;
 
 [TestClass]

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace DevTunnels.Client;
+namespace DevTunnels.Client.Internal;
 
 /// <summary>
 /// Source-generated JSON serializer context for all DevTunnels model types.

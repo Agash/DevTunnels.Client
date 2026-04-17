@@ -312,10 +312,9 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
             throw new ArgumentException("A host session requires either a tunnel ID or a local port number.", nameof(options));
         }
 
-        if (options.TunnelId is { Length: > 0 } tunnelId && !DevTunnelValidation.IsValidTunnelId(tunnelId))
-        {
-            throw new ArgumentException($"Tunnel ID '{tunnelId}' is invalid.", nameof(options));
-        }
+        // Tunnel ID format validation is intentionally omitted here — the devtunnel CLI
+        // accepts both short names and cluster-qualified IDs and will surface any format
+        // error in its own output. Pre-validating with a regex would be overly strict.
 
         IRunningProcess runningProcess = await _cli.StartHostAsync(options, cancellationToken).ConfigureAwait(false);
         return new DevTunnelHostSession(runningProcess, options, _logger);

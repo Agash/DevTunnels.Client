@@ -97,9 +97,7 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
                                                                                             try
                                                                                             {
                                                                                                 if (!_process.HasExited)
-                                                                                                {
-                                                                                                    _process.Kill(entireProcessTree: true);
-                                                                                                }
+                                                                                                    _process.Kill();
                                                                                             }
                                                                                             catch
                                                                                             {
@@ -116,19 +114,23 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            // Kill is a blocking Win32 call that enumerates and terminates the entire
-            // process tree synchronously. Offload to avoid stalling the calling thread
-            // (e.g. a UI dispatcher) while child processes are individually terminated.
+            // Kill(entireProcessTree: true) enumerates every process on the system via
+            // CreateToolhelp32Snapshot to locate descendants, throwing Win32Exception for
+            // each protected/system process it cannot query. Since the devtunnel CLI does
+            // not spawn child processes, Kill() on the root alone is correct and avoids
+            // the system-wide enumeration and its associated exception storm.
+            // Kill() itself is a synchronous Win32 call (TerminateProcess); offload so
+            // the calling thread (e.g. a UI dispatcher) is not stalled.
             await Task.Run(() =>
             {
                 try
                 {
                     if (!_process.HasExited)
-                        _process.Kill(entireProcessTree: true);
+                        _process.Kill();
                 }
                 catch
                 {
-                    // Process may have already exited or a child may deny access — ignore.
+                    // Process may have already exited — ignore.
                 }
             }).ConfigureAwait(false);
 

@@ -207,8 +207,8 @@ public sealed class DevTunnelsClientBehaviorTests
     public async Task StopAsync_DoesNotBlockCaller_WhenProcessShutdownTakesTime()
     {
         // Regression guard: StopAsync must return control to the caller before the
-        // underlying process fully exits. On Windows, Kill(entireProcessTree:true) is a
-        // blocking Win32 API call; if it runs on the calling thread it stalls a UI dispatcher.
+        // underlying process fully exits. Kill() is a blocking Win32 API call (TerminateProcess);
+        // if it runs on the calling thread it stalls a UI dispatcher.
         FakeProcessExecutor executor = new();
         FakeRunningProcess runningProcess = new()
         {

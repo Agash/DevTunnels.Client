@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <AssemblyName>DevTunnels.Client.Installer</AssemblyName>
+    <RootNamespace>DevTunnels.Client.Installer</RootNamespace>
+    <PackageId>DevTunnels.Client.Installer</PackageId>
+    <Title>DevTunnels.Client — CLI Installer</Title>
+    <Description>Platform-aware devtunnel CLI installer for DevTunnels.Client. Detects winget (Windows), Homebrew (macOS), curl/wget (Linux) and installs the devtunnel CLI automatically.</Description>
+    <PackageTags>azure devtunnels devtunnel tunnel installer winget brew curl wget dotnet csharp net10</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <IsPackable>true</IsPackable>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNet.ReproducibleBuilds" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>DevTunnels.Client.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

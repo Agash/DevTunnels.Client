@@ -11,6 +11,7 @@ Async-first .NET 10 client library for [Azure Dev Tunnels](https://aka.ms/devtun
 |---------|-------------|
 | `DevTunnels.Client` | Core typed CLI wrapper |
 | `DevTunnels.Client.DependencyInjection` | `IServiceCollection` registration helpers |
+| `DevTunnels.Client.Installer` | Platform-aware devtunnel CLI installer (winget / Homebrew / curl / wget) |
 
 ## Requirements
 
@@ -120,6 +121,45 @@ builder.Services.AddDevTunnelsClient(options =>
 {
     options.CommandTimeout = TimeSpan.FromSeconds(15);
 });
+```
+
+## CLI Installer
+
+`DevTunnels.Client.Installer` provides `IDevTunnelCliInstaller` / `DevTunnelCliInstaller` to
+detect the platform-appropriate package manager and install the `devtunnel` CLI automatically.
+
+```csharp
+using DevTunnels.Client.Installer;
+
+var installer = new DevTunnelCliInstaller();
+
+string? detected = await installer.DetectInstallerAsync();
+Console.WriteLine($"Installer: {detected ?? "none"}");
+
+DevTunnelCliInstallResult result = await installer.InstallAsync();
+if (result.Success)
+{
+    Console.WriteLine($"Installed via {result.InstallerUsed}.");
+}
+else
+{
+    Console.WriteLine($"Install failed: {result.FailureReason}");
+}
+```
+
+Supported installers per platform:
+
+| Platform | Installer | Install command |
+|----------|-----------|-----------------|
+| Windows | `winget` | `winget install Microsoft.devtunnel` |
+| macOS | `brew` | `brew install --cask devtunnel` |
+| Linux | `curl` | `curl -sL https://aka.ms/DevTunnelCliInstall \| bash` |
+| Linux | `wget` | `wget -qO- https://aka.ms/DevTunnelCliInstall \| bash` |
+
+Install it:
+
+```bash
+dotnet add package DevTunnels.Client.Installer
 ```
 
 ## API Surface

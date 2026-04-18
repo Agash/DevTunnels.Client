@@ -52,6 +52,7 @@ jobs:
       run: |
         dotnet pack src/DevTunnels.Client/DevTunnels.Client.csproj --configuration Release --no-build --output ${{ env.NuGetDirectory }}
         dotnet pack src/DevTunnels.Client.DependencyInjection/DevTunnels.Client.DependencyInjection.csproj --configuration Release --no-build --output ${{ env.NuGetDirectory }}
+        dotnet pack src/DevTunnels.Client.Installer/DevTunnels.Client.Installer.csproj --configuration Release --no-build --output ${{ env.NuGetDirectory }}
 
     - name: Upload package artifacts
       if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'release'

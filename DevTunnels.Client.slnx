@@ -14,6 +14,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/DevTunnels.Client.DependencyInjection/DevTunnels.Client.DependencyInjection.csproj" />
+    <Project Path="src/DevTunnels.Client.Installer/DevTunnels.Client.Installer.csproj" />
     <Project Path="src/DevTunnels.Client/DevTunnels.Client.csproj" />
   </Folder>
   <Folder Name="/tests/">

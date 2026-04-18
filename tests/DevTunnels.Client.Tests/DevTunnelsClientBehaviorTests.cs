@@ -177,4 +177,71 @@ public sealed class DevTunnelsClientBehaviorTests
         Assert.AreEqual(new Uri("https://jndfqj07-5000.euw.devtunnels.ms"), session.PublicUrl);
         Assert.DoesNotContain("-inspect.", session.PublicUrl!.ToString(), "PublicUrl must not be the inspect URL");
     }
+
+    [TestMethod]
+    public async Task StopAsync_TransitionsToStopped_WhenProcessExits()
+    {
+        FakeProcessExecutor executor = new();
+        FakeRunningProcess runningProcess = new();
+        executor.EnqueueRunningProcess(runningProcess);
+
+        DevTunnelsClient client = new(
+            new DevTunnelsClientOptions(),
+            NullLogger<DevTunnelsClient>.Instance,
+            executor);
+
+        IDevTunnelHostSession session = await client.StartHostSessionAsync(
+            new DevTunnelHostStartOptions { TunnelId = "sw-stop-test" },
+            TestContext.CancellationToken);
+
+        runningProcess.EmitStdOut("Tunnel ID: sw-stop-test");
+        runningProcess.EmitStdOut("Hosting at https://abc.devtunnels.ms");
+        await session.WaitForReadyAsync(TestContext.CancellationToken);
+
+        await session.StopAsync(TestContext.CancellationToken);
+
+        Assert.AreEqual(DevTunnelHostState.Stopped, session.State);
+    }
+
+    [TestMethod]
+    public async Task StopAsync_DoesNotBlockCaller_WhenProcessShutdownTakesTime()
+    {
+        // Regression guard: StopAsync must return control to the caller before the
+        // underlying process fully exits. On Windows, Kill(entireProcessTree:true) is a
+        // blocking Win32 API call; if it runs on the calling thread it stalls a UI dispatcher.
+        FakeProcessExecutor executor = new();
+        FakeRunningProcess runningProcess = new()
+        {
+            StopDelay = TimeSpan.FromMilliseconds(300)
+        };
+        executor.EnqueueRunningProcess(runningProcess);
+
+        DevTunnelsClient client = new(
+            new DevTunnelsClientOptions(),
+            NullLogger<DevTunnelsClient>.Instance,
+            executor);
+
+        IDevTunnelHostSession session = await client.StartHostSessionAsync(
+            new DevTunnelHostStartOptions { TunnelId = "sw-async-stop-test" },
+            TestContext.CancellationToken);
+
+        runningProcess.EmitStdOut("Tunnel ID: sw-async-stop-test");
+        runningProcess.EmitStdOut("Hosting at https://abc.devtunnels.ms");
+        await session.WaitForReadyAsync(TestContext.CancellationToken);
+
+        var stopTask = session.StopAsync(TestContext.CancellationToken);
+
+        // Before stop completes, the caller must be able to do async work — i.e. the
+        // task must not have run to completion synchronously on the calling thread.
+        // A 50 ms delay is well within the 300 ms StopDelay window.
+        var parallelTask = Task.Delay(50, TestContext.CancellationToken);
+        bool parallelCompletedBeforeStop = await Task.WhenAny(stopTask.AsTask(), parallelTask) == parallelTask;
+
+        await stopTask;
+
+        Assert.IsTrue(parallelCompletedBeforeStop,
+            "StopAsync must yield to the caller before the process exits — " +
+            "Kill(entireProcessTree:true) must not run synchronously on the calling thread.");
+        Assert.AreEqual(DevTunnelHostState.Stopped, session.State);
+    }
 }

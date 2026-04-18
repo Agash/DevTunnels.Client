@@ -39,6 +39,12 @@ internal sealed class FakeRunningProcess : IRunningProcess
 {
     private readonly TaskCompletionSource _exitTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>
+    /// When set, <see cref="StopAsync"/> waits this long before completing, simulating a
+    /// process that takes time to shut down (e.g. draining child processes on Windows).
+    /// </summary>
+    public TimeSpan StopDelay { get; init; } = TimeSpan.Zero;
+
     public event Action<bool, string>? OutputReceived;
 
     public int? ExitCode { get; private set; }
@@ -59,10 +65,11 @@ internal sealed class FakeRunningProcess : IRunningProcess
         await _exitTcs.Task.ConfigureAwait(false);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
+        if (StopDelay > TimeSpan.Zero)
+            await Task.Delay(StopDelay, cancellationToken).ConfigureAwait(false);
         Complete();
-        return Task.CompletedTask;
     }
 
     public ValueTask DisposeAsync()

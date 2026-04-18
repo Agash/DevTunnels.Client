@@ -114,21 +114,25 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
             await Task.WhenAll(_stdoutPump, _stderrPump).ConfigureAwait(false);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            try
+            // Kill is a blocking Win32 call that enumerates and terminates the entire
+            // process tree synchronously. Offload to avoid stalling the calling thread
+            // (e.g. a UI dispatcher) while child processes are individually terminated.
+            await Task.Run(() =>
             {
-                if (!_process.HasExited)
+                try
                 {
-                    _process.Kill(entireProcessTree: true);
+                    if (!_process.HasExited)
+                        _process.Kill(entireProcessTree: true);
                 }
-            }
-            catch
-            {
-                // ignored
-            }
+                catch
+                {
+                    // Process may have already exited or a child may deny access — ignore.
+                }
+            }).ConfigureAwait(false);
 
-            return WaitForExitAsync(cancellationToken);
+            await WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public async ValueTask DisposeAsync()

@@ -56,7 +56,7 @@ jobs:
       run: dotnet build DevTunnels.Client.slnx --configuration Release --no-restore
 
     - name: Run unit tests
-      run: dotnet test tests/DevTunnels.Client.Tests/DevTunnels.Client.Tests.csproj --configuration Release --no-build --verbosity normal -- --coverage --coverage-settings coverage.settings.xml --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+      run: dotnet test --project ${{ github.workspace }}/tests/DevTunnels.Client.Tests/DevTunnels.Client.Tests.csproj --configuration Release --no-build --verbosity normal -- --coverage --coverage-settings coverage.settings.xml --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
 
     - name: Summarize coverage
       # Renders the cobertura totals into the run summary. Uploading the raw XML alone means nobody

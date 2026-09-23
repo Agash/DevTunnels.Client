@@ -6,7 +6,12 @@ internal interface IInstallerProcessExecutor
         string fileName,
         IReadOnlyList<string> arguments,
         TimeSpan timeout,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 }
 
-internal sealed record InstallerProcessResult(int ExitCode, string StandardOutput, string StandardError);
+internal sealed record InstallerProcessResult(
+    int ExitCode,
+    string StandardOutput,
+    string StandardError
+);

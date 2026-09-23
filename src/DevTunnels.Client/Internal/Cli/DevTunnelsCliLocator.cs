@@ -8,7 +8,9 @@ internal static class DevTunnelsCliLocator
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        StringComparer comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        StringComparer comparer = OperatingSystem.IsWindows()
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
         var candidates = new List<string>();
         var seen = new HashSet<string>(comparer);
 
@@ -45,7 +47,8 @@ internal static class DevTunnelsCliLocator
         }
     }
 
-    public static string GetDefaultExecutableName() => OperatingSystem.IsWindows() ? "devtunnel.exe" : "devtunnel";
+    public static string GetDefaultExecutableName() =>
+        OperatingSystem.IsWindows() ? "devtunnel.exe" : "devtunnel";
 
     private static IEnumerable<string> GetKnownInstallLocations()
     {
@@ -53,10 +56,18 @@ internal static class DevTunnelsCliLocator
 
         if (OperatingSystem.IsWindows())
         {
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string localAppData = Environment.GetFolderPath(
+                Environment.SpecialFolder.LocalApplicationData
+            );
 
             yield return Path.Combine(localAppData, "Microsoft", "DevTunnels", "devtunnel.exe");
-            yield return Path.Combine(localAppData, "Microsoft", "WinGet", "Links", "devtunnel.exe");
+            yield return Path.Combine(
+                localAppData,
+                "Microsoft",
+                "WinGet",
+                "Links",
+                "devtunnel.exe"
+            );
             yield return Path.Combine(home, ".devtunnels", "bin", "devtunnel.exe");
             yield return Path.Combine(home, "bin", "devtunnel.exe");
             yield break;

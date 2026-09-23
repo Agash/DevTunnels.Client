@@ -23,7 +23,6 @@ namespace DevTunnels.Client.Internal;
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    NumberHandling = JsonNumberHandling.AllowReadingFromString)]
-internal sealed partial class DevTunnelsJsonSerializerContext : JsonSerializerContext
-{
-}
+    NumberHandling = JsonNumberHandling.AllowReadingFromString
+)]
+internal sealed partial class DevTunnelsJsonSerializerContext : JsonSerializerContext { }

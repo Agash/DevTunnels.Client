@@ -23,5 +23,6 @@ public sealed record DevTunnelLoginStatus
     /// <summary>
     /// Gets a value indicating whether the CLI reports a logged-in state.
     /// </summary>
-    public bool IsLoggedIn => string.Equals(Status, "Logged in", StringComparison.OrdinalIgnoreCase);
+    public bool IsLoggedIn =>
+        string.Equals(Status, "Logged in", StringComparison.OrdinalIgnoreCase);
 }

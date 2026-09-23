@@ -15,4 +15,5 @@ public sealed record DevTunnelCliProbeResult(
     Version? Version,
     string? RawOutput,
     bool MeetsMinimumVersion,
-    string? FailureReason);
+    string? FailureReason
+);

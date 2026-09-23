@@ -4,7 +4,10 @@ namespace DevTunnels.Client.Internal.Process;
 
 internal interface IProcessExecutor
 {
-    Task<ProcessExecutionResult> RunAsync(ProcessSpec processSpec, CancellationToken cancellationToken);
+    Task<ProcessExecutionResult> RunAsync(
+        ProcessSpec processSpec,
+        CancellationToken cancellationToken
+    );
 
     Task<IRunningProcess> StartAsync(ProcessSpec processSpec, CancellationToken cancellationToken);
 }
@@ -15,6 +18,11 @@ internal sealed record ProcessSpec(
     bool UseShellExecute,
     string? WorkingDirectory,
     Encoding? StandardOutputEncoding = null,
-    Encoding? StandardErrorEncoding = null);
+    Encoding? StandardErrorEncoding = null
+);
 
-internal sealed record ProcessExecutionResult(int ExitCode, string StandardOutput, string StandardError);
+internal sealed record ProcessExecutionResult(
+    int ExitCode,
+    string StandardOutput,
+    string StandardError
+);

@@ -8,9 +8,15 @@ namespace DevTunnels.Client.Internal;
 internal sealed partial class DevTunnelHostSession : IDevTunnelHostSession
 {
     private readonly IRunningProcess _runningProcess;
-    private readonly TaskCompletionSource _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _readyTcs = new(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
 
-    public DevTunnelHostSession(IRunningProcess runningProcess, DevTunnelHostStartOptions options, ILogger logger)
+    public DevTunnelHostSession(
+        IRunningProcess runningProcess,
+        DevTunnelHostStartOptions options,
+        ILogger logger
+    )
     {
         _runningProcess = runningProcess;
         State = DevTunnelHostState.Starting;
@@ -33,7 +39,9 @@ internal sealed partial class DevTunnelHostSession : IDevTunnelHostSession
 
     public async ValueTask WaitForReadyAsync(CancellationToken cancellationToken = default)
     {
-        using CancellationTokenRegistration ctr = cancellationToken.Register(() => _readyTcs.TrySetCanceled(cancellationToken));
+        using CancellationTokenRegistration ctr = cancellationToken.Register(() =>
+            _readyTcs.TrySetCanceled(cancellationToken)
+        );
         await _readyTcs.Task.ConfigureAwait(false);
     }
 
@@ -86,7 +94,8 @@ internal sealed partial class DevTunnelHostSession : IDevTunnelHostSession
             if (State == DevTunnelHostState.Starting)
             {
                 State = DevTunnelHostState.Failed;
-                FailureReason = LastOutputLine ?? "The devtunnel host process exited before becoming ready.";
+                FailureReason =
+                    LastOutputLine ?? "The devtunnel host process exited before becoming ready.";
                 _ = _readyTcs.TrySetException(new InvalidOperationException(FailureReason));
                 return;
             }

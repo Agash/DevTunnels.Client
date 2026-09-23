@@ -6,7 +6,8 @@ namespace DevTunnels.Client;
 public sealed class DevTunnelsCliException(
     string message,
     DevTunnelCommandResult commandResult,
-    Exception? innerException = null) : Exception(message, innerException)
+    Exception? innerException = null
+) : Exception(message, innerException)
 {
     /// <summary>
     /// Gets the captured command result.

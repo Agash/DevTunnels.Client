@@ -14,16 +14,53 @@ public sealed class DevTunnelsClientBehaviorTests
 {
     // Expected CLI argument sequences extracted to static readonly fields (CA1861).
     private static readonly string[] s_expectedCreateArgs =
-        ["create", "streamweaver-webhooks-01", "--description", "updated", "--allow-anonymous", "--labels", "sw", "--json", "--nologo"];
+    [
+        "create",
+        "streamweaver-webhooks-01",
+        "--description",
+        "updated",
+        "--allow-anonymous",
+        "--labels",
+        "sw",
+        "--json",
+        "--nologo",
+    ];
 
     private static readonly string[] s_expectedUpdateArgs =
-        ["update", "streamweaver-webhooks-01", "--description", "updated", "--add-labels", "sw", "--json", "--nologo"];
+    [
+        "update",
+        "streamweaver-webhooks-01",
+        "--description",
+        "updated",
+        "--add-labels",
+        "sw",
+        "--json",
+        "--nologo",
+    ];
 
     private static readonly string[] s_expectedPortUpdateArgs =
-        ["port", "update", "sw-01", "--port-number", "5000", "--description", "updated desc", "--add-labels", "v2", "--json", "--nologo"];
+    [
+        "port",
+        "update",
+        "sw-01",
+        "--port-number",
+        "5000",
+        "--description",
+        "updated desc",
+        "--add-labels",
+        "v2",
+        "--json",
+        "--nologo",
+    ];
 
     private static readonly string[] s_expectedTokenArgs =
-        ["token", "sw-01", "--scopes", "connect", "--nologo"];
+    [
+        "token",
+        "sw-01",
+        "--scopes",
+        "connect",
+        "--nologo",
+    ];
 
     public TestContext TestContext { get; set; } = null!;
 
@@ -31,17 +68,38 @@ public sealed class DevTunnelsClientBehaviorTests
     public async Task CreateOrUpdateTunnelAsync_WhenTunnelExists_UpdatesAndReconcilesAccess()
     {
         FakeProcessExecutor executor = new();
-        executor.EnqueueRunResult(new ProcessExecutionResult(DevTunnelCli.ResourceConflictsWithExistingExitCode, string.Empty, "exists"));
-        executor.EnqueueRunResult(new ProcessExecutionResult(0, """
-            { "tunnel": { "tunnelId": "streamweaver-webhooks-01", "hostConnections": 0, "clientConnections": 0, "description": "updated", "labels": ["sw"] } }
-            """, string.Empty));
-        executor.EnqueueRunResult(new ProcessExecutionResult(0, """{ "accessControlEntries": [] }""", string.Empty));
-        executor.EnqueueRunResult(new ProcessExecutionResult(0, """{ "accessControlEntries": [{ "type": "Anonymous", "isDeny": false, "isInherited": false, "subjects": [], "scopes": ["connect"] }] }""", string.Empty));
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                DevTunnelCli.ResourceConflictsWithExistingExitCode,
+                string.Empty,
+                "exists"
+            )
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """
+                { "tunnel": { "tunnelId": "streamweaver-webhooks-01", "hostConnections": 0, "clientConnections": 0, "description": "updated", "labels": ["sw"] } }
+                """,
+                string.Empty
+            )
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(0, """{ "accessControlEntries": [] }""", string.Empty)
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """{ "accessControlEntries": [{ "type": "Anonymous", "isDeny": false, "isInherited": false, "subjects": [], "scopes": ["connect"] }] }""",
+                string.Empty
+            )
+        );
 
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
         DevTunnelStatus result = await client.CreateOrUpdateTunnelAsync(
             "streamweaver-webhooks-01",
@@ -49,28 +107,44 @@ public sealed class DevTunnelsClientBehaviorTests
             {
                 Description = "updated",
                 AllowAnonymous = true,
-                Labels = ["sw"]
+                Labels = ["sw"],
             },
-            TestContext.CancellationToken);
+            TestContext.CancellationToken
+        );
 
         Assert.AreEqual("streamweaver-webhooks-01", result.TunnelId);
         Assert.HasCount(4, executor.RunInvocations);
-        CollectionAssert.AreEqual(s_expectedCreateArgs, executor.RunInvocations[0].Arguments.ToArray());
-        CollectionAssert.AreEqual(s_expectedUpdateArgs, executor.RunInvocations[1].Arguments.ToArray());
+        CollectionAssert.AreEqual(
+            s_expectedCreateArgs,
+            executor.RunInvocations[0].Arguments.ToArray()
+        );
+        CollectionAssert.AreEqual(
+            s_expectedUpdateArgs,
+            executor.RunInvocations[1].Arguments.ToArray()
+        );
     }
 
     [TestMethod]
     public async Task EnsureLoggedInAsync_WhenAlreadyLoggedIn_DoesNotInvokeLogin()
     {
         FakeProcessExecutor executor = new();
-        executor.EnqueueRunResult(new ProcessExecutionResult(0, """{ "status": "Logged in", "provider": "GitHub", "username": "agash" }""", string.Empty));
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """{ "status": "Logged in", "provider": "GitHub", "username": "agash" }""",
+                string.Empty
+            )
+        );
 
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions { PreferredLoginProvider = LoginProvider.GitHub },
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
-        DevTunnelLoginStatus status = await client.EnsureLoggedInAsync(cancellationToken: TestContext.CancellationToken);
+        DevTunnelLoginStatus status = await client.EnsureLoggedInAsync(
+            cancellationToken: TestContext.CancellationToken
+        );
 
         Assert.IsTrue(status.IsLoggedIn);
         Assert.AreEqual(LoginProvider.GitHub, status.Provider);
@@ -81,42 +155,64 @@ public sealed class DevTunnelsClientBehaviorTests
     public async Task UpdatePortAsync_WhenCalled_InvokesPortUpdateCommand()
     {
         FakeProcessExecutor executor = new();
-        executor.EnqueueRunResult(new ProcessExecutionResult(0, """{ "tunnelId": "sw-01", "portNumber": 5000, "protocol": "https", "clientConnections": 0 }""", string.Empty));
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """{ "tunnelId": "sw-01", "portNumber": 5000, "protocol": "https", "clientConnections": 0 }""",
+                string.Empty
+            )
+        );
 
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
         DevTunnelPortStatus result = await client.UpdatePortAsync(
             "sw-01",
             5000,
             new DevTunnelPortOptions { Description = "updated desc", Labels = ["v2"] },
-            TestContext.CancellationToken);
+            TestContext.CancellationToken
+        );
 
         Assert.AreEqual(5000, result.PortNumber);
         Assert.HasCount(1, executor.RunInvocations);
-        CollectionAssert.AreEqual(s_expectedPortUpdateArgs, executor.RunInvocations[0].Arguments.ToArray());
+        CollectionAssert.AreEqual(
+            s_expectedPortUpdateArgs,
+            executor.RunInvocations[0].Arguments.ToArray()
+        );
     }
 
     [TestMethod]
     public async Task GetAccessTokenAsync_WhenTokenPresentInOutput_ReturnsToken()
     {
         FakeProcessExecutor executor = new();
-        executor.EnqueueRunResult(new ProcessExecutionResult(0,
-            "Token tunnel ID: sw-01\nToken: eyJhbGciOiJSUzI1NiJ9.test.sig\n",
-            string.Empty));
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                "Token tunnel ID: sw-01\nToken: eyJhbGciOiJSUzI1NiJ9.test.sig\n",
+                string.Empty
+            )
+        );
 
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
-        string token = await client.GetAccessTokenAsync("sw-01", cancellationToken: TestContext.CancellationToken);
+        string token = await client.GetAccessTokenAsync(
+            "sw-01",
+            cancellationToken: TestContext.CancellationToken
+        );
 
         Assert.AreEqual("eyJhbGciOiJSUzI1NiJ9.test.sig", token);
         Assert.HasCount(1, executor.RunInvocations);
-        CollectionAssert.AreEqual(s_expectedTokenArgs, executor.RunInvocations[0].Arguments.ToArray());
+        CollectionAssert.AreEqual(
+            s_expectedTokenArgs,
+            executor.RunInvocations[0].Arguments.ToArray()
+        );
     }
 
     [TestMethod]
@@ -129,11 +225,13 @@ public sealed class DevTunnelsClientBehaviorTests
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
         IDevTunnelHostSession session = await client.StartHostSessionAsync(
             new DevTunnelHostStartOptions { TunnelId = "streamweaver-webhooks-01" },
-            TestContext.CancellationToken);
+            TestContext.CancellationToken
+        );
 
         runningProcess.EmitStdOut("Tunnel ID: streamweaver-webhooks-01");
         runningProcess.EmitStdOut("Hosting at https://abc123.devtunnels.ms");
@@ -158,16 +256,24 @@ public sealed class DevTunnelsClientBehaviorTests
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
         IDevTunnelHostSession session = await client.StartHostSessionAsync(
             new DevTunnelHostStartOptions { TunnelId = "streamweaver-webhooks-01" },
-            TestContext.CancellationToken);
+            TestContext.CancellationToken
+        );
 
         runningProcess.EmitStdOut("Hosting port: 5000");
-        runningProcess.EmitStdOut("Connect via browser: https://jndfqj07.euw.devtunnels.ms:5000, https://jndfqj07-5000.euw.devtunnels.ms");
-        runningProcess.EmitStdOut("Inspect network activity: https://jndfqj07-5000-inspect.euw.devtunnels.ms");
-        runningProcess.EmitStdOut("Ready to accept connections for tunnel: streamweaver-webhooks-01.euw");
+        runningProcess.EmitStdOut(
+            "Connect via browser: https://jndfqj07.euw.devtunnels.ms:5000, https://jndfqj07-5000.euw.devtunnels.ms"
+        );
+        runningProcess.EmitStdOut(
+            "Inspect network activity: https://jndfqj07-5000-inspect.euw.devtunnels.ms"
+        );
+        runningProcess.EmitStdOut(
+            "Ready to accept connections for tunnel: streamweaver-webhooks-01.euw"
+        );
 
         await session.WaitForReadyAsync(TestContext.CancellationToken);
 
@@ -175,7 +281,11 @@ public sealed class DevTunnelsClientBehaviorTests
         // Must be the standard-port hostname-embedded URL, NOT the explicit-port or inspect URL.
         // Webhook providers (Ko-fi, Patreon, etc.) reject URLs with explicit non-standard ports.
         Assert.AreEqual(new Uri("https://jndfqj07-5000.euw.devtunnels.ms"), session.PublicUrl);
-        Assert.DoesNotContain("-inspect.", session.PublicUrl!.ToString(), "PublicUrl must not be the inspect URL");
+        Assert.DoesNotContain(
+            "-inspect.",
+            session.PublicUrl!.ToString(),
+            "PublicUrl must not be the inspect URL"
+        );
     }
 
     [TestMethod]
@@ -188,11 +298,13 @@ public sealed class DevTunnelsClientBehaviorTests
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
         IDevTunnelHostSession session = await client.StartHostSessionAsync(
             new DevTunnelHostStartOptions { TunnelId = "sw-stop-test" },
-            TestContext.CancellationToken);
+            TestContext.CancellationToken
+        );
 
         runningProcess.EmitStdOut("Tunnel ID: sw-stop-test");
         runningProcess.EmitStdOut("Hosting at https://abc.devtunnels.ms");
@@ -210,20 +322,19 @@ public sealed class DevTunnelsClientBehaviorTests
         // underlying process fully exits. Kill() is a blocking Win32 API call (TerminateProcess);
         // if it runs on the calling thread it stalls a UI dispatcher.
         FakeProcessExecutor executor = new();
-        FakeRunningProcess runningProcess = new()
-        {
-            StopDelay = TimeSpan.FromMilliseconds(300)
-        };
+        FakeRunningProcess runningProcess = new() { StopDelay = TimeSpan.FromMilliseconds(300) };
         executor.EnqueueRunningProcess(runningProcess);
 
         DevTunnelsClient client = new(
             new DevTunnelsClientOptions(),
             NullLogger<DevTunnelsClient>.Instance,
-            executor);
+            executor
+        );
 
         IDevTunnelHostSession session = await client.StartHostSessionAsync(
             new DevTunnelHostStartOptions { TunnelId = "sw-async-stop-test" },
-            TestContext.CancellationToken);
+            TestContext.CancellationToken
+        );
 
         runningProcess.EmitStdOut("Tunnel ID: sw-async-stop-test");
         runningProcess.EmitStdOut("Hosting at https://abc.devtunnels.ms");
@@ -235,13 +346,16 @@ public sealed class DevTunnelsClientBehaviorTests
         // task must not have run to completion synchronously on the calling thread.
         // A 50 ms delay is well within the 300 ms StopDelay window.
         var parallelTask = Task.Delay(50, TestContext.CancellationToken);
-        bool parallelCompletedBeforeStop = await Task.WhenAny(stopTask.AsTask(), parallelTask) == parallelTask;
+        bool parallelCompletedBeforeStop =
+            await Task.WhenAny(stopTask.AsTask(), parallelTask) == parallelTask;
 
         await stopTask;
 
-        Assert.IsTrue(parallelCompletedBeforeStop,
-            "StopAsync must yield to the caller before the process exits — " +
-            "Kill(entireProcessTree:true) must not run synchronously on the calling thread.");
+        Assert.IsTrue(
+            parallelCompletedBeforeStop,
+            "StopAsync must yield to the caller before the process exits — "
+                + "Kill(entireProcessTree:true) must not run synchronously on the calling thread."
+        );
         Assert.AreEqual(DevTunnelHostState.Stopped, session.State);
     }
 }

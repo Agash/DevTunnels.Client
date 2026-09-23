@@ -6,17 +6,35 @@ namespace DevTunnels.Client.Internal.Process;
 
 internal sealed class SystemProcessExecutor : IProcessExecutor
 {
-    public async Task<ProcessExecutionResult> RunAsync(ProcessSpec processSpec, CancellationToken cancellationToken)
+    public async Task<ProcessExecutionResult> RunAsync(
+        ProcessSpec processSpec,
+        CancellationToken cancellationToken
+    )
     {
-        await using SystemRunningProcess running = await StartInternalAsync(processSpec, cancellationToken).ConfigureAwait(false);
+        await using SystemRunningProcess running = await StartInternalAsync(
+                processSpec,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         await running.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        return new ProcessExecutionResult(running.ExitCode ?? -1, running.StandardOutput.ToString(), running.StandardError.ToString());
+        return new ProcessExecutionResult(
+            running.ExitCode ?? -1,
+            running.StandardOutput.ToString(),
+            running.StandardError.ToString()
+        );
     }
 
-    public Task<IRunningProcess> StartAsync(ProcessSpec processSpec, CancellationToken cancellationToken) =>
-        StartInternalAsync(processSpec, cancellationToken).ContinueWith(static t => (IRunningProcess)t.Result, cancellationToken);
+    public Task<IRunningProcess> StartAsync(
+        ProcessSpec processSpec,
+        CancellationToken cancellationToken
+    ) =>
+        StartInternalAsync(processSpec, cancellationToken)
+            .ContinueWith(static t => (IRunningProcess)t.Result, cancellationToken);
 
-    private static Task<SystemRunningProcess> StartInternalAsync(ProcessSpec processSpec, CancellationToken cancellationToken)
+    private static Task<SystemRunningProcess> StartInternalAsync(
+        ProcessSpec processSpec,
+        CancellationToken cancellationToken
+    )
     {
         var startInfo = new SysProcessStartInfo
         {
@@ -26,7 +44,7 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
             RedirectStandardError = !processSpec.UseShellExecute,
             RedirectStandardInput = false,
             CreateNoWindow = true,
-            WorkingDirectory = processSpec.WorkingDirectory ?? Environment.CurrentDirectory
+            WorkingDirectory = processSpec.WorkingDirectory ?? Environment.CurrentDirectory,
         };
 
         foreach (string argument in processSpec.Arguments)
@@ -40,15 +58,13 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
             startInfo.StandardErrorEncoding = processSpec.StandardErrorEncoding ?? Encoding.UTF8;
         }
 
-        var process = new SysProcess
-        {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true
-        };
+        var process = new SysProcess { StartInfo = startInfo, EnableRaisingEvents = true };
 
         if (!process.Start())
         {
-            throw new InvalidOperationException($"Failed to start process '{processSpec.FileName}'.");
+            throw new InvalidOperationException(
+                $"Failed to start process '{processSpec.FileName}'."
+            );
         }
 
         var running = new SystemRunningProcess(process, processSpec.UseShellExecute);
@@ -61,7 +77,9 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
         private readonly SysProcess _process;
         private readonly Task _stdoutPump;
         private readonly Task _stderrPump;
-        private readonly TaskCompletionSource _exitTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _exitTcs = new(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         private CancellationTokenRegistration _cancellationRegistration;
 
         public SystemRunningProcess(SysProcess process, bool useShellExecute)
@@ -92,22 +110,25 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
 
         public StringBuilder StandardError { get; }
 
-        public void AttachCancellation(CancellationToken cancellationToken) => _cancellationRegistration = cancellationToken.Register(() =>
-                                                                                        {
-                                                                                            try
-                                                                                            {
-                                                                                                if (!_process.HasExited)
-                                                                                                    _process.Kill();
-                                                                                            }
-                                                                                            catch
-                                                                                            {
-                                                                                                // ignored
-                                                                                            }
-                                                                                        });
+        public void AttachCancellation(CancellationToken cancellationToken) =>
+            _cancellationRegistration = cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!_process.HasExited)
+                        _process.Kill();
+                }
+                catch
+                {
+                    // ignored
+                }
+            });
 
         public async Task WaitForExitAsync(CancellationToken cancellationToken)
         {
-            using CancellationTokenRegistration ctr = cancellationToken.Register(() => _exitTcs.TrySetCanceled(cancellationToken));
+            using CancellationTokenRegistration ctr = cancellationToken.Register(() =>
+                _exitTcs.TrySetCanceled(cancellationToken)
+            );
             await _exitTcs.Task.ConfigureAwait(false);
             await Task.WhenAll(_stdoutPump, _stderrPump).ConfigureAwait(false);
         }
@@ -122,17 +143,18 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
             // Kill() itself is a synchronous Win32 call (TerminateProcess); offload so
             // the calling thread (e.g. a UI dispatcher) is not stalled.
             await Task.Run(() =>
-            {
-                try
                 {
-                    if (!_process.HasExited)
-                        _process.Kill();
-                }
-                catch
-                {
-                    // Process may have already exited — ignore.
-                }
-            }).ConfigureAwait(false);
+                    try
+                    {
+                        if (!_process.HasExited)
+                            _process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited — ignore.
+                    }
+                })
+                .ConfigureAwait(false);
 
             await WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         }

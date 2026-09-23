@@ -8,10 +8,7 @@ public sealed class DevTunnelsCliLocatorTests
     [TestMethod]
     public void GetCandidateCommands_WithExplicitOverride_PutsOverrideFirst()
     {
-        var options = new DevTunnelsClientOptions
-        {
-            CliPathOverride = @"C:\tools\devtunnel.exe"
-        };
+        var options = new DevTunnelsClientOptions { CliPathOverride = @"C:\tools\devtunnel.exe" };
 
         IReadOnlyList<string> candidates = DevTunnelsCliLocator.GetCandidateCommands(options);
 

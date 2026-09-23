@@ -7,4 +7,5 @@ public sealed record DevTunnelCliInstallResult(
     string? InstalledPath,
     string? StandardOutput,
     string? StandardError,
-    string? FailureReason);
+    string? FailureReason
+);

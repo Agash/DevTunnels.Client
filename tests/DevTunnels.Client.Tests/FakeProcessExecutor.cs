@@ -12,13 +12,18 @@ internal sealed class FakeProcessExecutor : IProcessExecutor
 
     public List<ProcessSpec> StartInvocations { get; } = [];
 
-    public void EnqueueRunResult(Func<ProcessSpec, ProcessExecutionResult> resultFactory) => _runResults.Enqueue(resultFactory);
+    public void EnqueueRunResult(Func<ProcessSpec, ProcessExecutionResult> resultFactory) =>
+        _runResults.Enqueue(resultFactory);
 
     public void EnqueueRunResult(ProcessExecutionResult result) => _runResults.Enqueue(_ => result);
 
-    public void EnqueueRunningProcess(FakeRunningProcess process) => _runningProcesses.Enqueue(process);
+    public void EnqueueRunningProcess(FakeRunningProcess process) =>
+        _runningProcesses.Enqueue(process);
 
-    public Task<ProcessExecutionResult> RunAsync(ProcessSpec processSpec, CancellationToken cancellationToken)
+    public Task<ProcessExecutionResult> RunAsync(
+        ProcessSpec processSpec,
+        CancellationToken cancellationToken
+    )
     {
         RunInvocations.Add(processSpec);
         return _runResults.Count == 0
@@ -26,7 +31,10 @@ internal sealed class FakeProcessExecutor : IProcessExecutor
             : Task.FromResult(_runResults.Dequeue()(processSpec));
     }
 
-    public Task<IRunningProcess> StartAsync(ProcessSpec processSpec, CancellationToken cancellationToken)
+    public Task<IRunningProcess> StartAsync(
+        ProcessSpec processSpec,
+        CancellationToken cancellationToken
+    )
     {
         StartInvocations.Add(processSpec);
         return _runningProcesses.Count == 0
@@ -37,7 +45,9 @@ internal sealed class FakeProcessExecutor : IProcessExecutor
 
 internal sealed class FakeRunningProcess : IRunningProcess
 {
-    private readonly TaskCompletionSource _exitTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _exitTcs = new(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
 
     /// <summary>
     /// When set, <see cref="StopAsync"/> waits this long before completing, simulating a
@@ -61,7 +71,9 @@ internal sealed class FakeRunningProcess : IRunningProcess
 
     public async Task WaitForExitAsync(CancellationToken cancellationToken)
     {
-        using CancellationTokenRegistration ctr = cancellationToken.Register(() => _exitTcs.TrySetCanceled(cancellationToken));
+        using CancellationTokenRegistration ctr = cancellationToken.Register(() =>
+            _exitTcs.TrySetCanceled(cancellationToken)
+        );
         await _exitTcs.Task.ConfigureAwait(false);
     }
 

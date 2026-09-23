@@ -9,7 +9,8 @@ internal sealed class SystemInstallerProcessExecutor : IInstallerProcessExecutor
         string fileName,
         IReadOnlyList<string> arguments,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
@@ -28,11 +29,7 @@ internal sealed class SystemInstallerProcessExecutor : IInstallerProcessExecutor
             startInfo.ArgumentList.Add(argument);
         }
 
-        using Process process = new Process
-        {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true,
-        };
+        using Process process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
 
         if (!process.Start())
         {
@@ -40,7 +37,10 @@ internal sealed class SystemInstallerProcessExecutor : IInstallerProcessExecutor
         }
 
         using CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
-        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            timeoutCts.Token
+        );
 
         CancellationToken combinedToken = linkedCts.Token;
 
@@ -66,7 +66,9 @@ internal sealed class SystemInstallerProcessExecutor : IInstallerProcessExecutor
             catch { }
 
             if (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-                throw new TimeoutException($"Process '{fileName}' did not exit within the allowed timeout of {timeout}.");
+                throw new TimeoutException(
+                    $"Process '{fileName}' did not exit within the allowed timeout of {timeout}."
+                );
 
             throw;
         }

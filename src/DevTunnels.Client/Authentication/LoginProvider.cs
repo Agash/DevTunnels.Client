@@ -16,5 +16,5 @@ public enum LoginProvider
     /// <summary>
     /// Sign in with a GitHub account.
     /// </summary>
-    GitHub
+    GitHub,
 }

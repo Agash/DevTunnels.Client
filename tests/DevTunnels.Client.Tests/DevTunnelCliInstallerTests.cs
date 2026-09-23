@@ -16,14 +16,23 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         executor.EnqueueResult(new InstallerProcessResult(0, "v1.22.0", string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.AreEqual("winget", result);
         Assert.AreEqual(1, executor.Invocations.Count);
         Assert.AreEqual("winget", executor.Invocations[0].FileName);
-        CollectionAssert.AreEqual(new[] { "--version" }, (System.Collections.ICollection)executor.Invocations[0].Arguments);
+        CollectionAssert.AreEqual(
+            new[] { "--version" },
+            (System.Collections.ICollection)executor.Invocations[0].Arguments
+        );
     }
 
     [TestMethod]
@@ -32,9 +41,15 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         executor.EnqueueResult(new InstallerProcessResult(1, string.Empty, "not found"));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsNull(result);
     }
@@ -49,25 +64,42 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         executor.EnqueueResult(new InstallerProcessResult(0, "Homebrew 4.0.0", string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: true);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: true
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.AreEqual("brew", result);
         Assert.AreEqual(1, executor.Invocations.Count);
         Assert.AreEqual("brew", executor.Invocations[0].FileName);
-        CollectionAssert.AreEqual(new[] { "--version" }, (System.Collections.ICollection)executor.Invocations[0].Arguments);
+        CollectionAssert.AreEqual(
+            new[] { "--version" },
+            (System.Collections.ICollection)executor.Invocations[0].Arguments
+        );
     }
 
     [TestMethod]
     public async Task DetectInstallerAsync_OnMacOS_WithoutBrew_ReturnsNull()
     {
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
-        executor.EnqueueResult(new InstallerProcessResult(127, string.Empty, "brew: command not found"));
+        executor.EnqueueResult(
+            new InstallerProcessResult(127, string.Empty, "brew: command not found")
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: true);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: true
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsNull(result);
     }
@@ -83,9 +115,15 @@ public sealed class DevTunnelCliInstallerTests
         // curl --version succeeds
         executor.EnqueueResult(new InstallerProcessResult(0, "curl 8.0.0", string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.AreEqual("curl", result);
         Assert.AreEqual(1, executor.Invocations.Count);
@@ -101,9 +139,15 @@ public sealed class DevTunnelCliInstallerTests
         // wget probe succeeds
         executor.EnqueueResult(new InstallerProcessResult(0, "GNU Wget 1.21.0", string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.AreEqual("wget", result);
         Assert.AreEqual(2, executor.Invocations.Count);
@@ -118,9 +162,15 @@ public sealed class DevTunnelCliInstallerTests
         executor.EnqueueResult(new InstallerProcessResult(127, string.Empty, "curl: not found"));
         executor.EnqueueResult(new InstallerProcessResult(127, string.Empty, "wget: not found"));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false
+        );
 
-        string? result = await installer.DetectInstallerAsync(CancellationToken.None).ConfigureAwait(false);
+        string? result = await installer
+            .DetectInstallerAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsNull(result);
         Assert.AreEqual(2, executor.Invocations.Count);
@@ -137,11 +187,19 @@ public sealed class DevTunnelCliInstallerTests
         // DetectInstallerAsync probe
         executor.EnqueueResult(new InstallerProcessResult(0, "v1.22.0", string.Empty));
         // Install command
-        executor.EnqueueResult(new InstallerProcessResult(0, "Successfully installed.", string.Empty));
+        executor.EnqueueResult(
+            new InstallerProcessResult(0, "Successfully installed.", string.Empty)
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliInstallResult result = await installer.InstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("winget", result.InstallerUsed);
@@ -151,8 +209,18 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerInvocation installInvocation = executor.Invocations[1];
         Assert.AreEqual("winget", installInvocation.FileName);
         CollectionAssert.AreEqual(
-            new[] { "install", "Microsoft.devtunnel", "--accept-source-agreements", "--accept-package-agreements", "--scope", "user", "--silent" },
-            (System.Collections.ICollection)installInvocation.Arguments);
+            new[]
+            {
+                "install",
+                "Microsoft.devtunnel",
+                "--accept-source-agreements",
+                "--accept-package-agreements",
+                "--scope",
+                "user",
+                "--silent",
+            },
+            (System.Collections.ICollection)installInvocation.Arguments
+        );
     }
 
     [TestMethod]
@@ -161,9 +229,15 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         executor.EnqueueResult(new InstallerProcessResult(1, string.Empty, "winget not found"));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliInstallResult result = await installer.InstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsFalse(result.Success);
         Assert.AreEqual(string.Empty, result.InstallerUsed);
@@ -182,11 +256,19 @@ public sealed class DevTunnelCliInstallerTests
         // DetectInstallerAsync probe
         executor.EnqueueResult(new InstallerProcessResult(0, "Homebrew 4.0.0", string.Empty));
         // Install command
-        executor.EnqueueResult(new InstallerProcessResult(0, "==> Installing devtunnel", string.Empty));
+        executor.EnqueueResult(
+            new InstallerProcessResult(0, "==> Installing devtunnel", string.Empty)
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: true);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: true
+        );
 
-        DevTunnelCliInstallResult result = await installer.InstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("brew", result.InstallerUsed);
@@ -195,7 +277,8 @@ public sealed class DevTunnelCliInstallerTests
         Assert.AreEqual("bash", installInvocation.FileName);
         CollectionAssert.AreEqual(
             new[] { "-c", "HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask devtunnel" },
-            (System.Collections.ICollection)installInvocation.Arguments);
+            (System.Collections.ICollection)installInvocation.Arguments
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -211,9 +294,15 @@ public sealed class DevTunnelCliInstallerTests
         // Install command
         executor.EnqueueResult(new InstallerProcessResult(0, "devtunnel installed.", string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false
+        );
 
-        DevTunnelCliInstallResult result = await installer.InstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("curl", result.InstallerUsed);
@@ -222,7 +311,8 @@ public sealed class DevTunnelCliInstallerTests
         Assert.AreEqual("bash", installInvocation.FileName);
         CollectionAssert.AreEqual(
             new[] { "-c", "curl -sL https://aka.ms/DevTunnelCliInstall | bash" },
-            (System.Collections.ICollection)installInvocation.Arguments);
+            (System.Collections.ICollection)installInvocation.Arguments
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -238,9 +328,15 @@ public sealed class DevTunnelCliInstallerTests
         // Install command exits with error
         executor.EnqueueResult(new InstallerProcessResult(1, string.Empty, "Installation failed."));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliInstallResult result = await installer.InstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsFalse(result.Success);
         Assert.AreEqual("winget", result.InstallerUsed);
@@ -260,11 +356,19 @@ public sealed class DevTunnelCliInstallerTests
         // winget probe for uninstall detection
         executor.EnqueueResult(new InstallerProcessResult(0, "v1.22.0", string.Empty));
         // Uninstall command
-        executor.EnqueueResult(new InstallerProcessResult(0, "Successfully uninstalled.", string.Empty));
+        executor.EnqueueResult(
+            new InstallerProcessResult(0, "Successfully uninstalled.", string.Empty)
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("winget", result.UninstallerUsed);
@@ -273,8 +377,17 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerInvocation uninstallInvocation = executor.Invocations[1];
         Assert.AreEqual("winget", uninstallInvocation.FileName);
         CollectionAssert.AreEqual(
-            new[] { "uninstall", "Microsoft.devtunnel", "--accept-source-agreements", "--scope", "user", "--silent" },
-            (System.Collections.ICollection)uninstallInvocation.Arguments);
+            new[]
+            {
+                "uninstall",
+                "Microsoft.devtunnel",
+                "--accept-source-agreements",
+                "--scope",
+                "user",
+                "--silent",
+            },
+            (System.Collections.ICollection)uninstallInvocation.Arguments
+        );
     }
 
     [TestMethod]
@@ -284,9 +397,15 @@ public sealed class DevTunnelCliInstallerTests
         // winget probe fails
         executor.EnqueueResult(new InstallerProcessResult(1, string.Empty, "winget not found"));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsFalse(result.Success);
         Assert.AreEqual(string.Empty, result.UninstallerUsed);
@@ -305,11 +424,19 @@ public sealed class DevTunnelCliInstallerTests
         // brew probe for uninstall detection
         executor.EnqueueResult(new InstallerProcessResult(0, "Homebrew 4.0.0", string.Empty));
         // Uninstall command
-        executor.EnqueueResult(new InstallerProcessResult(0, "Uninstalling devtunnel", string.Empty));
+        executor.EnqueueResult(
+            new InstallerProcessResult(0, "Uninstalling devtunnel", string.Empty)
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: true);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: true
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("brew", result.UninstallerUsed);
@@ -318,7 +445,8 @@ public sealed class DevTunnelCliInstallerTests
         Assert.AreEqual("bash", uninstallInvocation.FileName);
         CollectionAssert.AreEqual(
             new[] { "-c", "HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --cask devtunnel" },
-            (System.Collections.ICollection)uninstallInvocation.Arguments);
+            (System.Collections.ICollection)uninstallInvocation.Arguments
+        );
     }
 
     [TestMethod]
@@ -326,11 +454,19 @@ public sealed class DevTunnelCliInstallerTests
     {
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         // brew probe fails
-        executor.EnqueueResult(new InstallerProcessResult(127, string.Empty, "brew: command not found"));
+        executor.EnqueueResult(
+            new InstallerProcessResult(127, string.Empty, "brew: command not found")
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: true);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: true
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsFalse(result.Success);
         Assert.AreEqual(string.Empty, result.UninstallerUsed);
@@ -349,9 +485,15 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         executor.EnqueueResult(new InstallerProcessResult(0, string.Empty, string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("bash", result.UninstallerUsed);
@@ -361,7 +503,8 @@ public sealed class DevTunnelCliInstallerTests
         Assert.AreEqual("bash", uninstallInvocation.FileName);
         CollectionAssert.AreEqual(
             new[] { "-c", "rm -rf \"$HOME/.devtunnel\"" },
-            (System.Collections.ICollection)uninstallInvocation.Arguments);
+            (System.Collections.ICollection)uninstallInvocation.Arguments
+        );
     }
 
     [TestMethod]
@@ -376,9 +519,15 @@ public sealed class DevTunnelCliInstallerTests
         // Uninstall command exits with 20 — package not installed
         executor.EnqueueResult(new InstallerProcessResult(20, string.Empty, string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsTrue(result.Success);
         Assert.AreEqual("winget", result.UninstallerUsed);
@@ -392,11 +541,19 @@ public sealed class DevTunnelCliInstallerTests
         // winget probe succeeds
         executor.EnqueueResult(new InstallerProcessResult(0, "v1.22.0", string.Empty));
         // Uninstall command exits with error
-        executor.EnqueueResult(new InstallerProcessResult(1, string.Empty, "No installed package found."));
+        executor.EnqueueResult(
+            new InstallerProcessResult(1, string.Empty, "No installed package found.")
+        );
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: true, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: true,
+            isMacOS: false
+        );
 
-        DevTunnelCliUninstallResult result = await installer.UninstallAsync(CancellationToken.None).ConfigureAwait(false);
+        DevTunnelCliUninstallResult result = await installer
+            .UninstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
 
         Assert.IsFalse(result.Success);
         Assert.AreEqual("winget", result.UninstallerUsed);
@@ -412,7 +569,8 @@ public sealed class DevTunnelCliInstallerTests
     private static DevTunnelCliInstaller CreateInstaller(
         FakeInstallerProcessExecutor executor,
         bool isWindows,
-        bool isMacOS)
+        bool isMacOS
+    )
     {
         DevTunnelCliInstallerOptions options = new DevTunnelCliInstallerOptions();
         FakePlatformDetector platformDetector = new FakePlatformDetector(isWindows, isMacOS);
@@ -438,11 +596,14 @@ internal sealed class FakeInstallerProcessExecutor : IInstallerProcessExecutor
         string fileName,
         IReadOnlyList<string> arguments,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Invocations.Add(new FakeInstallerInvocation(fileName, arguments));
         return _results.Count == 0
-            ? throw new InvalidOperationException("No queued installer process result was available.")
+            ? throw new InvalidOperationException(
+                "No queued installer process result was available."
+            )
             : Task.FromResult(_results.Dequeue());
     }
 }
@@ -459,5 +620,6 @@ internal sealed class FakePlatformDetector : IPlatformDetector
     }
 
     public bool IsWindows() => _isWindows;
+
     public bool IsMacOS() => _isMacOS;
 }

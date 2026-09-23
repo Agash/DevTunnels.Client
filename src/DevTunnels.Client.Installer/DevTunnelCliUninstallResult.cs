@@ -6,4 +6,5 @@ public sealed record DevTunnelCliUninstallResult(
     string UninstallerUsed,
     string? StandardOutput,
     string? StandardError,
-    string? FailureReason);
+    string? FailureReason
+);

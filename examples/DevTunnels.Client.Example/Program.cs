@@ -35,14 +35,11 @@ IDevTunnelsClient client = host.Services.GetRequiredService<IDevTunnelsClient>()
 // Header
 // ─────────────────────────────────────────────────────────────────────────────
 AnsiConsole.Clear();
-AnsiConsole.Write(
-    new FigletText("DevTunnels")
-        .Centered()
-        .Color(Color.DodgerBlue1));
+AnsiConsole.Write(new FigletText("DevTunnels").Centered().Color(Color.DodgerBlue1));
 
 AnsiConsole.Write(
-    new Rule("[grey]Azure Dev Tunnels Client — interactive demo[/]")
-        .RuleStyle(Style.Parse("grey")));
+    new Rule("[grey]Azure Dev Tunnels Client — interactive demo[/]").RuleStyle(Style.Parse("grey"))
+);
 
 AnsiConsole.WriteLine();
 
@@ -69,10 +66,19 @@ while (true)
             .HighlightStyle(Style.Parse("dodgerblue1 bold"))
             .PageSize(12)
             .AddChoices([
-                OptProbe, OptLogin, OptEnsure, OptList,
-                OptTunnel, OptPort, OptAccess, OptToken,
-                OptWebhook, OptRaw, OptExit,
-            ]));
+                OptProbe,
+                OptLogin,
+                OptEnsure,
+                OptList,
+                OptTunnel,
+                OptPort,
+                OptAccess,
+                OptToken,
+                OptWebhook,
+                OptRaw,
+                OptExit,
+            ])
+    );
 
     AnsiConsole.WriteLine();
 
@@ -85,16 +91,36 @@ while (true)
     {
         switch (choice)
         {
-            case OptProbe: await DemoProbeCliAsync(client); break;
-            case OptLogin: await DemoCheckLoginAsync(client); break;
-            case OptEnsure: await DemoEnsureLoggedInAsync(client); break;
-            case OptList: await DemoListTunnelsAsync(client); break;
-            case OptTunnel: await DemoManageTunnelAsync(client); break;
-            case OptPort: await DemoManagePortAsync(client); break;
-            case OptAccess: await DemoInspectAccessAsync(client); break;
-            case OptToken: await DemoIssueAccessTokenAsync(client); break;
-            case OptWebhook: await DemoWebhookSetupAsync(client); break;
-            case OptRaw: await DemoRawCommandAsync(client); break;
+            case OptProbe:
+                await DemoProbeCliAsync(client);
+                break;
+            case OptLogin:
+                await DemoCheckLoginAsync(client);
+                break;
+            case OptEnsure:
+                await DemoEnsureLoggedInAsync(client);
+                break;
+            case OptList:
+                await DemoListTunnelsAsync(client);
+                break;
+            case OptTunnel:
+                await DemoManageTunnelAsync(client);
+                break;
+            case OptPort:
+                await DemoManagePortAsync(client);
+                break;
+            case OptAccess:
+                await DemoInspectAccessAsync(client);
+                break;
+            case OptToken:
+                await DemoIssueAccessTokenAsync(client);
+                break;
+            case OptWebhook:
+                await DemoWebhookSetupAsync(client);
+                break;
+            case OptRaw:
+                await DemoRawCommandAsync(client);
+                break;
         }
     }
     catch (Exception ex)
@@ -122,7 +148,10 @@ static async Task DemoProbeCliAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync("Searching known install paths and PATH...", _ => client.ProbeCliAsync().AsTask());
+        .StartAsync(
+            "Searching known install paths and PATH...",
+            _ => client.ProbeCliAsync().AsTask()
+        );
 
     Table table = new Table()
         .Border(TableBorder.Rounded)
@@ -131,9 +160,17 @@ static async Task DemoProbeCliAsync(IDevTunnelsClient client)
         .AddColumn("[grey]Value[/]");
 
     _ = table.AddRow("Installed", result.IsInstalled ? "[green]Yes[/]" : "[red]No[/]");
-    _ = table.AddRow("Path", result.ResolvedPath is not null ? $"[grey]{Markup.Escape(result.ResolvedPath)}[/]" : "[grey dim]<not found>[/]");
+    _ = table.AddRow(
+        "Path",
+        result.ResolvedPath is not null
+            ? $"[grey]{Markup.Escape(result.ResolvedPath)}[/]"
+            : "[grey dim]<not found>[/]"
+    );
     _ = table.AddRow("Version", result.Version?.ToString() ?? "[grey dim]<unknown>[/]");
-    _ = table.AddRow("Meets minimum", result.MeetsMinimumVersion ? "[green]Yes[/]" : "[yellow]No[/]");
+    _ = table.AddRow(
+        "Meets minimum",
+        result.MeetsMinimumVersion ? "[green]Yes[/]" : "[yellow]No[/]"
+    );
 
     if (!string.IsNullOrWhiteSpace(result.FailureReason))
     {
@@ -147,15 +184,19 @@ static async Task DemoProbeCliAsync(IDevTunnelsClient client)
         AnsiConsole.WriteLine();
         AnsiConsole.Write(
             new Panel(
-                "[yellow]The devtunnel CLI was not found.\n\n" +
-                "Install from: [link]https://aka.ms/devtunnel/install[/]\n" +
-                "Then authenticate: [bold]devtunnel user login[/][/]")
-            .Header("[yellow] CLI not installed [/]")
-            .BorderStyle(Style.Parse("yellow")));
+                "[yellow]The devtunnel CLI was not found.\n\n"
+                    + "Install from: [link]https://aka.ms/devtunnel/install[/]\n"
+                    + "Then authenticate: [bold]devtunnel user login[/][/]"
+            )
+                .Header("[yellow] CLI not installed [/]")
+                .BorderStyle(Style.Parse("yellow"))
+        );
     }
     else if (!result.MeetsMinimumVersion)
     {
-        WriteWarning($"Version {result.Version} is below the minimum supported version. Please update.");
+        WriteWarning(
+            $"Version {result.Version} is below the minimum supported version. Please update."
+        );
     }
     else
     {
@@ -192,7 +233,8 @@ static async Task DemoEnsureLoggedInAsync(IDevTunnelsClient client)
         new SelectionPrompt<LoginProvider>()
             .Title("[grey]Preferred identity provider:[/]")
             .HighlightStyle(Style.Parse("dodgerblue1"))
-            .AddChoices(LoginProvider.GitHub, LoginProvider.Microsoft));
+            .AddChoices(LoginProvider.GitHub, LoginProvider.Microsoft)
+    );
 
     AnsiConsole.WriteLine();
 
@@ -212,7 +254,9 @@ static async Task DemoEnsureLoggedInAsync(IDevTunnelsClient client)
     }
 
     AnsiConsole.MarkupLine("[yellow]Not logged in (or different provider).[/]");
-    AnsiConsole.MarkupLine("[grey]A browser window will open. Complete authentication and return here.[/]");
+    AnsiConsole.MarkupLine(
+        "[grey]A browser window will open. Complete authentication and return here.[/]"
+    );
     AnsiConsole.WriteLine();
 
     if (!AnsiConsole.Confirm("Open login browser now?"))
@@ -258,13 +302,18 @@ static async Task DemoListTunnelsAsync(IDevTunnelsClient client)
     foreach (DevTunnelStatus t in tunnelList.Tunnels)
     {
         string labels = t.Labels.Count > 0 ? string.Join(", ", t.Labels) : "[grey dim]—[/]";
-        string desc = !string.IsNullOrWhiteSpace(t.Description) ? Markup.Escape(t.Description) : "[grey dim]—[/]";
+        string desc = !string.IsNullOrWhiteSpace(t.Description)
+            ? Markup.Escape(t.Description)
+            : "[grey dim]—[/]";
 
         _ = table.AddRow(
             $"[bold]{Markup.Escape(t.TunnelId)}[/]",
             desc,
-            t.HostConnections > 0 ? $"[green]{t.HostConnections}[/]" : $"[grey]{t.HostConnections}[/]",
-            labels);
+            t.HostConnections > 0
+                ? $"[green]{t.HostConnections}[/]"
+                : $"[grey]{t.HostConnections}[/]",
+            labels
+        );
     }
 
     AnsiConsole.Write(table);
@@ -280,11 +329,14 @@ static async Task DemoManageTunnelAsync(IDevTunnelsClient client)
 
     string tunnelId = AnsiConsole.Ask<string>(
         "Tunnel ID [grey](e.g. my-demo-tunnel-01)[/]:",
-        "my-demo-tunnel-01");
+        "my-demo-tunnel-01"
+    );
 
     if (!DevTunnelValidation.IsValidTunnelId(tunnelId))
     {
-        WriteError($"'{tunnelId}' is not a valid tunnel ID. Use lowercase letters, numbers, and hyphens (3–60 chars).");
+        WriteError(
+            $"'{tunnelId}' is not a valid tunnel ID. Use lowercase letters, numbers, and hyphens (3–60 chars)."
+        );
         return;
     }
 
@@ -295,13 +347,21 @@ static async Task DemoManageTunnelAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Creating or updating tunnel '{tunnelId}'...",
-            _ => client.CreateOrUpdateTunnelAsync(tunnelId, new DevTunnelOptions
-            {
-                Description = "DevTunnels.Client demo tunnel",
-                AllowAnonymous = false,
-                Labels = ["demo"],
-            }).AsTask());
+        .StartAsync(
+            $"Creating or updating tunnel '{tunnelId}'...",
+            _ =>
+                client
+                    .CreateOrUpdateTunnelAsync(
+                        tunnelId,
+                        new DevTunnelOptions
+                        {
+                            Description = "DevTunnels.Client demo tunnel",
+                            AllowAnonymous = false,
+                            Labels = ["demo"],
+                        }
+                    )
+                    .AsTask()
+        );
 
     AnsiConsole.MarkupLine($"[green]Tunnel ready:[/] [bold]{Markup.Escape(status.TunnelId)}[/]");
     RenderTunnelStatus(status);
@@ -312,8 +372,10 @@ static async Task DemoManageTunnelAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Re-fetching tunnel '{tunnelId}'...",
-            _ => client.GetTunnelAsync(tunnelId).AsTask());
+        .StartAsync(
+            $"Re-fetching tunnel '{tunnelId}'...",
+            _ => client.GetTunnelAsync(tunnelId).AsTask()
+        );
 
     AnsiConsole.MarkupLine("[grey]Re-fetched from CLI:[/]");
     RenderTunnelStatus(fetched);
@@ -326,10 +388,14 @@ static async Task DemoManageTunnelAsync(IDevTunnelsClient client)
             .Status()
             .Spinner(Spinner.Known.Dots)
             .SpinnerStyle(Style.Parse("red"))
-            .StartAsync($"Deleting tunnel '{tunnelId}'...",
-                _ => client.DeleteTunnelAsync(tunnelId).AsTask());
+            .StartAsync(
+                $"Deleting tunnel '{tunnelId}'...",
+                _ => client.DeleteTunnelAsync(tunnelId).AsTask()
+            );
 
-        AnsiConsole.MarkupLine($"[green]Deleted:[/] [grey]{Markup.Escape(deleteResult.DeletedTunnel)}[/]");
+        AnsiConsole.MarkupLine(
+            $"[green]Deleted:[/] [grey]{Markup.Escape(deleteResult.DeletedTunnel)}[/]"
+        );
     }
     else
     {
@@ -368,8 +434,7 @@ static async Task DemoManagePortAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync("Listing existing ports...",
-            _ => client.GetPortListAsync(tunnelId).AsTask());
+        .StartAsync("Listing existing ports...", _ => client.GetPortListAsync(tunnelId).AsTask());
 
     if (portList.Ports.Count > 0)
     {
@@ -386,28 +451,43 @@ static async Task DemoManagePortAsync(IDevTunnelsClient client)
             _ = portTable.AddRow(
                 p.PortNumber.ToString(),
                 p.Protocol,
-                p.PortUri?.ToString() ?? "[grey dim]—[/]");
+                p.PortUri?.ToString() ?? "[grey dim]—[/]"
+            );
         }
 
         AnsiConsole.Write(portTable);
         AnsiConsole.WriteLine();
     }
 
-    bool allowAnon = AnsiConsole.Confirm("Allow anonymous (public) access on this port?", defaultValue: true);
+    bool allowAnon = AnsiConsole.Confirm(
+        "Allow anonymous (public) access on this port?",
+        defaultValue: true
+    );
 
     DevTunnelPortStatus portStatus = await AnsiConsole
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Creating port {portNumber} on tunnel '{tunnelId}'...",
-            _ => client.CreateOrReplacePortAsync(tunnelId, portNumber, new DevTunnelPortOptions
-            {
-                Protocol = "https",
-                Description = "Webhook ingress port",
-                AllowAnonymous = allowAnon,
-            }).AsTask());
+        .StartAsync(
+            $"Creating port {portNumber} on tunnel '{tunnelId}'...",
+            _ =>
+                client
+                    .CreateOrReplacePortAsync(
+                        tunnelId,
+                        portNumber,
+                        new DevTunnelPortOptions
+                        {
+                            Protocol = "https",
+                            Description = "Webhook ingress port",
+                            AllowAnonymous = allowAnon,
+                        }
+                    )
+                    .AsTask()
+        );
 
-    AnsiConsole.MarkupLine($"[green]Port {portStatus.PortNumber} created on tunnel [bold]{Markup.Escape(portStatus.TunnelId)}[/].[/]");
+    AnsiConsole.MarkupLine(
+        $"[green]Port {portStatus.PortNumber} created on tunnel [bold]{Markup.Escape(portStatus.TunnelId)}[/].[/]"
+    );
     AnsiConsole.MarkupLine($"  Protocol: [grey]{portStatus.Protocol}[/]");
     AnsiConsole.MarkupLine($"  Anonymous access: [grey]{(allowAnon ? "allowed" : "denied")}[/]");
 }
@@ -421,7 +501,10 @@ static async Task DemoInspectAccessAsync(IDevTunnelsClient client)
     AnsiConsole.WriteLine();
 
     string tunnelId = AnsiConsole.Ask<string>("Tunnel ID:", "my-demo-tunnel-01");
-    string portInput = AnsiConsole.Ask<string>("Port number [grey](leave empty for tunnel-level)[/]:", string.Empty);
+    string portInput = AnsiConsole.Ask<string>(
+        "Port number [grey](leave empty for tunnel-level)[/]:",
+        string.Empty
+    );
     int? portNumber = string.IsNullOrWhiteSpace(portInput) ? null : int.Parse(portInput);
 
     AnsiConsole.WriteLine();
@@ -430,8 +513,10 @@ static async Task DemoInspectAccessAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync("Fetching access policies...",
-            _ => client.GetAccessAsync(tunnelId, portNumber).AsTask());
+        .StartAsync(
+            "Fetching access policies...",
+            _ => client.GetAccessAsync(tunnelId, portNumber).AsTask()
+        );
 
     string target = portNumber.HasValue
         ? $"port {portNumber} on tunnel '{tunnelId}'"
@@ -439,7 +524,9 @@ static async Task DemoInspectAccessAsync(IDevTunnelsClient client)
 
     if (access.AccessControlEntries.Count == 0)
     {
-        AnsiConsole.MarkupLine($"[grey]No access control entries found for {Markup.Escape(target)}.[/]");
+        AnsiConsole.MarkupLine(
+            $"[grey]No access control entries found for {Markup.Escape(target)}.[/]"
+        );
         return;
     }
 
@@ -458,7 +545,8 @@ static async Task DemoInspectAccessAsync(IDevTunnelsClient client)
             entry.Type,
             entry.IsDeny ? "[red]Yes[/]" : "[green]No[/]",
             entry.IsInherited ? "[grey]Yes[/]" : "No",
-            entry.Scopes.Count > 0 ? string.Join(", ", entry.Scopes) : "[grey dim]—[/]");
+            entry.Scopes.Count > 0 ? string.Join(", ", entry.Scopes) : "[grey dim]—[/]"
+        );
     }
 
     AnsiConsole.Write(table);
@@ -480,11 +568,13 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 {
     AnsiConsole.Write(
         new Panel(
-            "[bold]This scenario walks through a full managed tunnel setup[/]\n" +
-            "to expose a local webhook ingress endpoint to providers\n" +
-            "like [cyan]Ko-fi[/], [cyan]Patreon[/], [cyan]Fourthwall[/], and [cyan]Kick[/].")
-        .Header("[bold dodgerblue1] Webhook Ingress Setup [/]")
-        .BorderStyle(Style.Parse("dodgerblue1")));
+            "[bold]This scenario walks through a full managed tunnel setup[/]\n"
+                + "to expose a local webhook ingress endpoint to providers\n"
+                + "like [cyan]Ko-fi[/], [cyan]Patreon[/], [cyan]Fourthwall[/], and [cyan]Kick[/]."
+        )
+            .Header("[bold dodgerblue1] Webhook Ingress Setup [/]")
+            .BorderStyle(Style.Parse("dodgerblue1"))
+    );
 
     AnsiConsole.WriteLine();
 
@@ -501,11 +591,13 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
     {
         AnsiConsole.Write(
             new Panel(
-                "[yellow]devtunnel CLI not found.\n\n" +
-                "Download: [link]https://aka.ms/devtunnel/install[/]\n" +
-                "After installing, restart this demo.[/]")
-            .Header("[yellow] CLI not installed [/]")
-            .BorderStyle(Style.Parse("yellow")));
+                "[yellow]devtunnel CLI not found.\n\n"
+                    + "Download: [link]https://aka.ms/devtunnel/install[/]\n"
+                    + "After installing, restart this demo.[/]"
+            )
+                .Header("[yellow] CLI not installed [/]")
+                .BorderStyle(Style.Parse("yellow"))
+        );
         return;
     }
 
@@ -515,7 +607,9 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
         return;
     }
 
-    AnsiConsole.MarkupLine($"  [green]✓[/] v[bold]{probe.Version}[/] at [grey]{Markup.Escape(probe.ResolvedPath ?? string.Empty)}[/]");
+    AnsiConsole.MarkupLine(
+        $"  [green]✓[/] v[bold]{probe.Version}[/] at [grey]{Markup.Escape(probe.ResolvedPath ?? string.Empty)}[/]"
+    );
     AnsiConsole.WriteLine();
 
     // ── Step 2: Ensure logged in ─────────────────────────────────────────────
@@ -535,9 +629,12 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
             new SelectionPrompt<LoginProvider>()
                 .Title("  Log in with:")
                 .HighlightStyle(Style.Parse("dodgerblue1"))
-                .AddChoices(LoginProvider.GitHub, LoginProvider.Microsoft));
+                .AddChoices(LoginProvider.GitHub, LoginProvider.Microsoft)
+        );
 
-        AnsiConsole.MarkupLine("  [grey]A browser window will open. Complete authentication and return here.[/]");
+        AnsiConsole.MarkupLine(
+            "  [grey]A browser window will open. Complete authentication and return here.[/]"
+        );
 
         if (!AnsiConsole.Confirm("  Open browser now?"))
         {
@@ -554,7 +651,9 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
         return;
     }
 
-    AnsiConsole.MarkupLine($"  [green]✓[/] Logged in as [bold]{Markup.Escape(loginStatus.Username ?? "unknown")}[/] via [grey]{loginStatus.Provider}[/]");
+    AnsiConsole.MarkupLine(
+        $"  [green]✓[/] Logged in as [bold]{Markup.Escape(loginStatus.Username ?? "unknown")}[/] via [grey]{loginStatus.Provider}[/]"
+    );
     AnsiConsole.WriteLine();
 
     // ── Step 3: Configure tunnel ─────────────────────────────────────────────
@@ -562,7 +661,8 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 
     string tunnelId = AnsiConsole.Ask<string>(
         "  Tunnel ID [grey](stable identity — reused across restarts)[/]:",
-        "my-app-webhooks-01");
+        "my-app-webhooks-01"
+    );
 
     if (!DevTunnelValidation.IsValidTunnelId(tunnelId))
     {
@@ -572,7 +672,8 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 
     int localPort = AnsiConsole.Ask(
         "  Local HTTP port [grey](the port your webhook listener binds to)[/]:",
-        5000);
+        5000
+    );
 
     AnsiConsole.WriteLine();
 
@@ -580,14 +681,22 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Creating or updating tunnel '{tunnelId}'...",
-            _ => client.CreateOrUpdateTunnelAsync(tunnelId, new DevTunnelOptions
-            {
-                // Tunnel-level anonymous access is off; port-level anonymous is set below.
-                Description = "Managed webhook ingress",
-                AllowAnonymous = false,
-                Labels = ["webhooks"],
-            }).AsTask());
+        .StartAsync(
+            $"Creating or updating tunnel '{tunnelId}'...",
+            _ =>
+                client
+                    .CreateOrUpdateTunnelAsync(
+                        tunnelId,
+                        new DevTunnelOptions
+                        {
+                            // Tunnel-level anonymous access is off; port-level anonymous is set below.
+                            Description = "Managed webhook ingress",
+                            AllowAnonymous = false,
+                            Labels = ["webhooks"],
+                        }
+                    )
+                    .AsTask()
+        );
 
     AnsiConsole.MarkupLine($"  [green]✓[/] Tunnel [bold]{Markup.Escape(tunnelStatus.TunnelId)}[/]");
 
@@ -595,19 +704,30 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Creating or replacing port {localPort}...",
-            _ => client.CreateOrReplacePortAsync(tunnelId, localPort, new DevTunnelPortOptions
-            {
-                // "http" = devtunnel terminates TLS on the public side and forwards
-                // plain HTTP to the local port. "https" would make devtunnel open a
-                // TLS connection to our local Kestrel, which speaks plain HTTP and
-                // would immediately reject the TLS handshake with a 502.
-                Protocol = "http",
-                Description = "Webhook HTTP listener",
-                AllowAnonymous = true,   // providers POST without a token
-            }).AsTask());
+        .StartAsync(
+            $"Creating or replacing port {localPort}...",
+            _ =>
+                client
+                    .CreateOrReplacePortAsync(
+                        tunnelId,
+                        localPort,
+                        new DevTunnelPortOptions
+                        {
+                            // "http" = devtunnel terminates TLS on the public side and forwards
+                            // plain HTTP to the local port. "https" would make devtunnel open a
+                            // TLS connection to our local Kestrel, which speaks plain HTTP and
+                            // would immediately reject the TLS handshake with a 502.
+                            Protocol = "http",
+                            Description = "Webhook HTTP listener",
+                            AllowAnonymous = true, // providers POST without a token
+                        }
+                    )
+                    .AsTask()
+        );
 
-    AnsiConsole.MarkupLine($"  [green]✓[/] Port {portStatus.PortNumber} (http→https via devtunnel TLS termination, anonymous allowed)");
+    AnsiConsole.MarkupLine(
+        $"  [green]✓[/] Port {portStatus.PortNumber} (http→https via devtunnel TLS termination, anonymous allowed)"
+    );
     AnsiConsole.WriteLine();
 
     // ── Start Kestrel webhook listener ───────────────────────────────────────
@@ -628,7 +748,8 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
         webhookApp = webBuilder.Build();
 
 #pragma warning disable ASP0018 // Unused route parameter
-        _ = webhookApp.MapMethods("/{**catchAll}",
+        _ = webhookApp.MapMethods(
+            "/{**catchAll}",
             ["GET", "POST", "PUT", "PATCH", "DELETE"],
             async (HttpRequest req) =>
             {
@@ -645,20 +766,31 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
                     headers[h.Key] = h.Value.ToString();
                 }
 
-                DisplayIncomingWebhook(req.Method, req.Path.ToString(), headers, body, req.ContentType);
+                DisplayIncomingWebhook(
+                    req.Method,
+                    req.Path.ToString(),
+                    headers,
+                    body,
+                    req.ContentType
+                );
 
                 return Results.Content("{\"status\":\"ok\"}", "application/json");
-            });
+            }
+        );
 #pragma warning restore ASP0018 // Unused route parameter
 
         await webhookApp.StartAsync().ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"  [green]✓[/] Local webhook receiver on [bold]http://localhost:{localPort}/[/]");
+        AnsiConsole.MarkupLine(
+            $"  [green]✓[/] Local webhook receiver on [bold]http://localhost:{localPort}/[/]"
+        );
         AnsiConsole.MarkupLine("  [grey dim]Incoming payloads will be printed as they arrive.[/]");
     }
     catch (Exception ex)
     {
         WriteWarning($"Could not start local listener on port {localPort}: {ex.Message}");
-        AnsiConsole.MarkupLine("  [grey]Incoming payloads visible in the devtunnel inspect URL only.[/]");
+        AnsiConsole.MarkupLine(
+            "  [grey]Incoming payloads visible in the devtunnel inspect URL only.[/]"
+        );
     }
 
     AnsiConsole.WriteLine();
@@ -670,7 +802,11 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
     AnsiConsole.WriteLine();
 
     using var cts = new CancellationTokenSource();
-    Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+    Console.CancelKeyPress += (_, e) =>
+    {
+        e.Cancel = true;
+        cts.Cancel();
+    };
 
     IDevTunnelHostSession session = await client.StartHostSessionAsync(
         new DevTunnelHostStartOptions
@@ -678,7 +814,8 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
             TunnelId = tunnelId,
             ReadyTimeout = TimeSpan.FromSeconds(30),
         },
-        cts.Token);
+        cts.Token
+    );
 
     // Stream startup output lines (capped to avoid scroll noise)
     int lineCount = 0;
@@ -727,20 +864,24 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 
     AnsiConsole.Write(
         new Panel(
-            $"[bold green]{Markup.Escape(webhookBase)}/{{providerName}}/{{instanceId}}/{{webhookKey}}[/]\n\n" +
-            "[grey]Copy this base URL to your provider dashboards.[/]\n\n" +
-            "Example registrations:\n\n" +
-            $"  [cyan]Ko-fi[/]       →  {Markup.Escape(webhookBase)}/ko-fi/ko-fi1/donation-received\n" +
-            $"  [cyan]Patreon[/]     →  {Markup.Escape(webhookBase)}/patreon/patreon1/pledge-created\n" +
-            $"  [cyan]Fourthwall[/]  →  {Markup.Escape(webhookBase)}/fourthwall/shop1/order-placed\n" +
-            $"  [cyan]Kick[/]        →  {Markup.Escape(webhookBase)}/kick/channel1/follow\n\n" +
-            $"[yellow]Tunnel identity [bold]{Markup.Escape(tunnelId)}[/] is stable and will be reused\n" +
-            "on the next application restart (within the inactivity window).[/]")
-        .Header("[bold green] Webhook base URL — copy to provider dashboards [/]")
-        .BorderStyle(Style.Parse("green")));
+            $"[bold green]{Markup.Escape(webhookBase)}/{{providerName}}/{{instanceId}}/{{webhookKey}}[/]\n\n"
+                + "[grey]Copy this base URL to your provider dashboards.[/]\n\n"
+                + "Example registrations:\n\n"
+                + $"  [cyan]Ko-fi[/]       →  {Markup.Escape(webhookBase)}/ko-fi/ko-fi1/donation-received\n"
+                + $"  [cyan]Patreon[/]     →  {Markup.Escape(webhookBase)}/patreon/patreon1/pledge-created\n"
+                + $"  [cyan]Fourthwall[/]  →  {Markup.Escape(webhookBase)}/fourthwall/shop1/order-placed\n"
+                + $"  [cyan]Kick[/]        →  {Markup.Escape(webhookBase)}/kick/channel1/follow\n\n"
+                + $"[yellow]Tunnel identity [bold]{Markup.Escape(tunnelId)}[/] is stable and will be reused\n"
+                + "on the next application restart (within the inactivity window).[/]"
+        )
+            .Header("[bold green] Webhook base URL — copy to provider dashboards [/]")
+            .BorderStyle(Style.Parse("green"))
+    );
 
     AnsiConsole.WriteLine();
-    AnsiConsole.MarkupLine($"[grey]Tunnel:[/]   [bold]{Markup.Escape(session.TunnelId ?? tunnelId)}[/]");
+    AnsiConsole.MarkupLine(
+        $"[grey]Tunnel:[/]   [bold]{Markup.Escape(session.TunnelId ?? tunnelId)}[/]"
+    );
     AnsiConsole.MarkupLine($"[grey]Public:[/]   [bold]{Markup.Escape(publicBase)}[/]");
     AnsiConsole.MarkupLine($"[grey]State:[/]    [green]{session.State}[/]");
     AnsiConsole.MarkupLine($"[grey]Port:[/]     {localPort} → {publicBase}");
@@ -759,7 +900,11 @@ static async Task DemoWebhookSetupAsync(IDevTunnelsClient client)
 
     AnsiConsole.WriteLine();
     AnsiConsole.MarkupLine("[grey]Stopping session...[/]");
-    if (webhookApp is not null) { await webhookApp.StopAsync(CancellationToken.None); await webhookApp.DisposeAsync(); }
+    if (webhookApp is not null)
+    {
+        await webhookApp.StopAsync(CancellationToken.None);
+        await webhookApp.DisposeAsync();
+    }
     await session.StopAsync(CancellationToken.None);
     await session.DisposeAsync();
     AnsiConsole.MarkupLine("[grey]Session stopped.[/]");
@@ -776,12 +921,14 @@ static async Task DemoIssueAccessTokenAsync(IDevTunnelsClient client)
 {
     AnsiConsole.Write(
         new Panel(
-            "[bold]Issues a connect-scoped access token for a managed tunnel.[/]\n\n" +
-            "Share this token with a remote client so it can connect to the tunnel\n" +
-            "without a Dev Tunnels account. Present it as [bold]X-Tunnel-Authorization[/].\n\n" +
-            "[grey]CLI command: devtunnel token <tunnelId> --scopes connect --nologo[/]")
-        .Header("[bold dodgerblue1] Issue Access Token [/]")
-        .BorderStyle(Style.Parse("dodgerblue1")));
+            "[bold]Issues a connect-scoped access token for a managed tunnel.[/]\n\n"
+                + "Share this token with a remote client so it can connect to the tunnel\n"
+                + "without a Dev Tunnels account. Present it as [bold]X-Tunnel-Authorization[/].\n\n"
+                + "[grey]CLI command: devtunnel token <tunnelId> --scopes connect --nologo[/]"
+        )
+            .Header("[bold dodgerblue1] Issue Access Token [/]")
+            .BorderStyle(Style.Parse("dodgerblue1"))
+    );
 
     AnsiConsole.WriteLine();
 
@@ -795,7 +942,8 @@ static async Task DemoIssueAccessTokenAsync(IDevTunnelsClient client)
 
     string scopeInput = AnsiConsole.Ask<string>(
         "Scopes [grey](space-separated, leave blank for default 'connect')[/]:",
-        string.Empty);
+        string.Empty
+    );
 
     string[] scopes = string.IsNullOrWhiteSpace(scopeInput)
         ? []
@@ -807,22 +955,26 @@ static async Task DemoIssueAccessTokenAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Issuing token for tunnel '{tunnelId}'...",
-            _ => client.GetAccessTokenAsync(tunnelId, scopes.Length > 0 ? scopes : null).AsTask());
+        .StartAsync(
+            $"Issuing token for tunnel '{tunnelId}'...",
+            _ => client.GetAccessTokenAsync(tunnelId, scopes.Length > 0 ? scopes : null).AsTask()
+        );
 
     // Truncate for display (tokens are long JWTs)
-    string displayToken = token.Length > 80
-        ? $"{token[..40]}…{token[^20..]}"
-        : token;
+    string displayToken = token.Length > 80 ? $"{token[..40]}…{token[^20..]}" : token;
 
     AnsiConsole.Write(
         new Panel(
-            $"[bold green]{Markup.Escape(displayToken)}[/]\n\n" +
-            "[grey]Full token length:[/] " + token.Length + " chars\n\n" +
-            "[yellow]Share this token with the remote operator client.\n" +
-            "It should be sent as the[/] [bold]X-Tunnel-Authorization[/] [yellow]header.[/]")
-        .Header("[bold green] Access token issued [/]")
-        .BorderStyle(Style.Parse("green")));
+            $"[bold green]{Markup.Escape(displayToken)}[/]\n\n"
+                + "[grey]Full token length:[/] "
+                + token.Length
+                + " chars\n\n"
+                + "[yellow]Share this token with the remote operator client.\n"
+                + "It should be sent as the[/] [bold]X-Tunnel-Authorization[/] [yellow]header.[/]"
+        )
+            .Header("[bold green] Access token issued [/]")
+            .BorderStyle(Style.Parse("green"))
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -831,8 +983,12 @@ static async Task DemoIssueAccessTokenAsync(IDevTunnelsClient client)
 static async Task DemoRawCommandAsync(IDevTunnelsClient client)
 {
     AnsiConsole.MarkupLine("[bold]Raw CLI command (escape hatch)[/]");
-    AnsiConsole.MarkupLine("[grey]Passes arguments directly to the devtunnel CLI and captures output.[/]");
-    AnsiConsole.MarkupLine("[grey]Example inputs: [bold]user show --json --nologo[/]   or   [bold]list --json --nologo[/][/]");
+    AnsiConsole.MarkupLine(
+        "[grey]Passes arguments directly to the devtunnel CLI and captures output.[/]"
+    );
+    AnsiConsole.MarkupLine(
+        "[grey]Example inputs: [bold]user show --json --nologo[/]   or   [bold]list --json --nologo[/][/]"
+    );
     AnsiConsole.WriteLine();
 
     string input = AnsiConsole.Ask<string>("Arguments:", "user show --json --nologo");
@@ -844,8 +1000,10 @@ static async Task DemoRawCommandAsync(IDevTunnelsClient client)
         .Status()
         .Spinner(Spinner.Known.Dots)
         .SpinnerStyle(Style.Parse("dodgerblue1"))
-        .StartAsync($"Running: devtunnel {string.Join(' ', args)}...",
-            _ => client.ExecuteRawAsync(args).AsTask());
+        .StartAsync(
+            $"Running: devtunnel {string.Join(' ', args)}...",
+            _ => client.ExecuteRawAsync(args).AsTask()
+        );
 
     Table table = new Table()
         .Border(TableBorder.Rounded)
@@ -853,15 +1011,22 @@ static async Task DemoRawCommandAsync(IDevTunnelsClient client)
         .AddColumn("[grey]Field[/]")
         .AddColumn("[grey]Value[/]");
 
-    _ = table.AddRow("Exit code", result.ExitCode == 0 ? "[green]0[/]" : $"[red]{result.ExitCode}[/]");
-    _ = table.AddRow("stdout",
+    _ = table.AddRow(
+        "Exit code",
+        result.ExitCode == 0 ? "[green]0[/]" : $"[red]{result.ExitCode}[/]"
+    );
+    _ = table.AddRow(
+        "stdout",
         !string.IsNullOrWhiteSpace(result.StandardOutput)
             ? $"[grey]{Markup.Escape(result.StandardOutput.Trim())}[/]"
-            : "[grey dim](empty)[/]");
-    _ = table.AddRow("stderr",
+            : "[grey dim](empty)[/]"
+    );
+    _ = table.AddRow(
+        "stderr",
         !string.IsNullOrWhiteSpace(result.StandardError)
             ? $"[red]{Markup.Escape(result.StandardError.Trim())}[/]"
-            : "[grey dim](empty)[/]");
+            : "[grey dim](empty)[/]"
+    );
 
     AnsiConsole.Write(table);
 }
@@ -869,18 +1034,32 @@ static async Task DemoRawCommandAsync(IDevTunnelsClient client)
 // ─────────────────────────────────────────────────────────────────────────────
 // Local webhook listener helpers
 // ─────────────────────────────────────────────────────────────────────────────
-static void DisplayIncomingWebhook(string method, string path, Dictionary<string, string> headers, string body, string? contentType)
+static void DisplayIncomingWebhook(
+    string method,
+    string path,
+    Dictionary<string, string> headers,
+    string body,
+    string? contentType
+)
 {
-    AnsiConsole.Write(new Rule($"[bold yellow]↓ {method} {Markup.Escape(path)}[/]").RuleStyle(Style.Parse("yellow dim")));
+    AnsiConsole.Write(
+        new Rule($"[bold yellow]↓ {method} {Markup.Escape(path)}[/]").RuleStyle(
+            Style.Parse("yellow dim")
+        )
+    );
 
     // Show Content-Type and any X-* headers (signatures, etc.)
     foreach ((string? key, string? value) in headers)
     {
-        if (key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+        if (
+            key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
             || key.StartsWith("X-", StringComparison.OrdinalIgnoreCase)
-            || key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase))
+            || key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase)
+        )
         {
-            AnsiConsole.MarkupLine($"  [grey dim]{Markup.Escape(key)}:[/] [grey]{Markup.Escape(value)}[/]");
+            AnsiConsole.MarkupLine(
+                $"  [grey dim]{Markup.Escape(key)}:[/] [grey]{Markup.Escape(value)}[/]"
+            );
         }
     }
 
@@ -903,7 +1082,12 @@ static void DisplayIncomingWebhook(string method, string path, Dictionary<string
 // All other providers send application/json directly.
 static string FormatWebhookBody(string body, string? contentType)
 {
-    if (contentType?.Contains("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase) == true)
+    if (
+        contentType?.Contains(
+            "application/x-www-form-urlencoded",
+            StringComparison.OrdinalIgnoreCase
+        ) == true
+    )
     {
         foreach (string pair in body.Split('&'))
         {
@@ -972,11 +1156,24 @@ static void RenderTunnelStatus(DevTunnelStatus status)
         .AddColumn(string.Empty);
 
     _ = table.AddRow("Tunnel ID", $"[bold]{Markup.Escape(status.TunnelId)}[/]");
-    _ = table.AddRow("Description", !string.IsNullOrWhiteSpace(status.Description) ? Markup.Escape(status.Description) : "[grey dim]—[/]");
-    _ = table.AddRow("Labels", status.Labels.Count > 0 ? string.Join(", ", status.Labels) : "[grey dim]—[/]");
+    _ = table.AddRow(
+        "Description",
+        !string.IsNullOrWhiteSpace(status.Description)
+            ? Markup.Escape(status.Description)
+            : "[grey dim]—[/]"
+    );
+    _ = table.AddRow(
+        "Labels",
+        status.Labels.Count > 0 ? string.Join(", ", status.Labels) : "[grey dim]—[/]"
+    );
     _ = table.AddRow("Host conns", status.HostConnections.ToString());
     _ = table.AddRow("Client conns", status.ClientConnections.ToString());
-    _ = table.AddRow("Ports", status.Ports.Count > 0 ? string.Join(", ", status.Ports.Select(p => p.PortNumber)) : "[grey dim]—[/]");
+    _ = table.AddRow(
+        "Ports",
+        status.Ports.Count > 0
+            ? string.Join(", ", status.Ports.Select(p => p.PortNumber))
+            : "[grey dim]—[/]"
+    );
 
     AnsiConsole.Write(table);
 }

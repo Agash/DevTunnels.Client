@@ -9,4 +9,5 @@ namespace DevTunnels.Client;
 public sealed record DevTunnelCommandResult(
     int ExitCode,
     string StandardOutput,
-    string StandardError);
+    string StandardError
+);

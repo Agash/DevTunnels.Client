@@ -15,5 +15,5 @@ public enum DevTunnelHostState
     Stopped,
 
     /// <summary>The host process failed or exited unexpectedly.</summary>
-    Failed
+    Failed,
 }

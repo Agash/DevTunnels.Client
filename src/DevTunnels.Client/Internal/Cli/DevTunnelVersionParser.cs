@@ -14,8 +14,13 @@ internal static class DevTunnelVersionParser
         }
 
         string? versionLine = rawOutput
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .FirstOrDefault(static line => line.StartsWith(VersionPrefix, StringComparison.OrdinalIgnoreCase));
+            .Split(
+                ['\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
+            .FirstOrDefault(static line =>
+                line.StartsWith(VersionPrefix, StringComparison.OrdinalIgnoreCase)
+            );
 
         string versionText = versionLine is null
             ? rawOutput.Trim()

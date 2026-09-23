@@ -19,7 +19,8 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection for chaining.</returns>
     public static IServiceCollection AddDevTunnelsClient(
         this IServiceCollection services,
-        Action<DevTunnelsClientOptions>? configure = null)
+        Action<DevTunnelsClientOptions>? configure = null
+    )
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -32,7 +33,9 @@ public static class ServiceCollectionExtensions
 
         return services.AddSingleton<IDevTunnelsClient>(sp =>
         {
-            DevTunnelsClientOptions options = sp.GetRequiredService<IOptions<DevTunnelsClientOptions>>().Value;
+            DevTunnelsClientOptions options = sp.GetRequiredService<
+                IOptions<DevTunnelsClientOptions>
+            >().Value;
             ILogger<DevTunnelsClient>? logger = sp.GetService<ILogger<DevTunnelsClient>>();
             return new DevTunnelsClient(options, logger);
         });
@@ -50,14 +53,17 @@ public static class ServiceCollectionExtensions
     /// <param name="configuration">The configuration section or root to bind.</param>
     /// <returns>The same service collection for chaining.</returns>
     [RequiresUnreferencedCode(
-        "Binding DevTunnelsClientOptions from IConfiguration uses reflection. " +
-        "Use the Action<DevTunnelsClientOptions> overload for AOT-compatible configuration.")]
+        "Binding DevTunnelsClientOptions from IConfiguration uses reflection. "
+            + "Use the Action<DevTunnelsClientOptions> overload for AOT-compatible configuration."
+    )]
     [RequiresDynamicCode(
-        "Binding DevTunnelsClientOptions from IConfiguration may require runtime code generation. " +
-        "Use the Action<DevTunnelsClientOptions> overload for AOT-compatible configuration.")]
+        "Binding DevTunnelsClientOptions from IConfiguration may require runtime code generation. "
+            + "Use the Action<DevTunnelsClientOptions> overload for AOT-compatible configuration."
+    )]
     public static IServiceCollection AddDevTunnelsClient(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration
+    )
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);

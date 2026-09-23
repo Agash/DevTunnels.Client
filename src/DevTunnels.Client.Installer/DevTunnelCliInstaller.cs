@@ -19,20 +19,23 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
     /// </summary>
     /// <param name="options">Optional installer options.</param>
     /// <param name="logger">Optional logger.</param>
-    public DevTunnelCliInstaller(DevTunnelCliInstallerOptions? options = null, ILogger<DevTunnelCliInstaller>? logger = null)
+    public DevTunnelCliInstaller(
+        DevTunnelCliInstallerOptions? options = null,
+        ILogger<DevTunnelCliInstaller>? logger = null
+    )
         : this(
             options ?? new DevTunnelCliInstallerOptions(),
             logger,
             new SystemInstallerProcessExecutor(),
-            new RuntimePlatformDetector())
-    {
-    }
+            new RuntimePlatformDetector()
+        ) { }
 
     internal DevTunnelCliInstaller(
         DevTunnelCliInstallerOptions options,
         ILogger<DevTunnelCliInstaller>? logger,
         IInstallerProcessExecutor processExecutor,
-        IPlatformDetector platformDetector)
+        IPlatformDetector platformDetector
+    )
     {
         _options = options;
         _logger = logger ?? NullLogger<DevTunnelCliInstaller>.Instance;
@@ -45,11 +48,14 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
     private const int WingetNoPackageFoundExitCode = 20;
 
     /// <inheritdoc />
-    public async ValueTask<string?> DetectInstallerAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<string?> DetectInstallerAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         if (_platformDetector.IsWindows())
         {
-            return await ProbeAsync("winget", ["--version"], cancellationToken).ConfigureAwait(false)
+            return await ProbeAsync("winget", ["--version"], cancellationToken)
+                .ConfigureAwait(false)
                 ? "winget"
                 : null;
         }
@@ -76,7 +82,9 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
     }
 
     /// <inheritdoc />
-    public async ValueTask<DevTunnelCliInstallResult> InstallAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<DevTunnelCliInstallResult> InstallAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         string? installer = _options.PreferredInstaller;
 
@@ -95,18 +103,17 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
                 InstalledPath: null,
                 StandardOutput: null,
                 StandardError: null,
-                FailureReason: failureReason);
+                FailureReason: failureReason
+            );
         }
 
         _logger.LogInformation("Installing devtunnel CLI using '{Installer}'.", installer);
 
         (string fileName, IReadOnlyList<string> arguments) = GetInstallCommand(installer);
 
-        InstallerProcessResult result = await _processExecutor.RunAsync(
-            fileName,
-            arguments,
-            _options.InstallTimeout,
-            cancellationToken).ConfigureAwait(false);
+        InstallerProcessResult result = await _processExecutor
+            .RunAsync(fileName, arguments, _options.InstallTimeout, cancellationToken)
+            .ConfigureAwait(false);
 
         if (result.ExitCode != 0)
         {
@@ -114,7 +121,8 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
                 "devtunnel CLI installation via '{Installer}' failed with exit code {ExitCode}. Stderr: {StandardError}",
                 installer,
                 result.ExitCode,
-                result.StandardError);
+                result.StandardError
+            );
 
             return new DevTunnelCliInstallResult(
                 Success: false,
@@ -122,10 +130,14 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
                 InstalledPath: null,
                 StandardOutput: result.StandardOutput,
                 StandardError: result.StandardError,
-                FailureReason: $"Installer '{installer}' exited with code {result.ExitCode}.");
+                FailureReason: $"Installer '{installer}' exited with code {result.ExitCode}."
+            );
         }
 
-        _logger.LogInformation("devtunnel CLI installed successfully via '{Installer}'.", installer);
+        _logger.LogInformation(
+            "devtunnel CLI installed successfully via '{Installer}'.",
+            installer
+        );
 
         return new DevTunnelCliInstallResult(
             Success: true,
@@ -133,18 +145,21 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
             InstalledPath: null,
             StandardOutput: result.StandardOutput,
             StandardError: result.StandardError,
-            FailureReason: null);
+            FailureReason: null
+        );
     }
 
-    private async Task<bool> ProbeAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task<bool> ProbeAsync(
+        string fileName,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            InstallerProcessResult result = await _processExecutor.RunAsync(
-                fileName,
-                arguments,
-                TimeSpan.FromSeconds(10),
-                cancellationToken).ConfigureAwait(false);
+            InstallerProcessResult result = await _processExecutor
+                .RunAsync(fileName, arguments, TimeSpan.FromSeconds(10), cancellationToken)
+                .ConfigureAwait(false);
 
             return result.ExitCode == 0;
         }
@@ -171,7 +186,9 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
     }
 
     /// <inheritdoc />
-    public async ValueTask<DevTunnelCliUninstallResult> UninstallAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<DevTunnelCliUninstallResult> UninstallAsync(
+        CancellationToken cancellationToken = default
+    )
     {
         (string? uninstallerUsed, string? fileName, IReadOnlyList<string>? arguments) =
             await ResolveUninstallerAsync(cancellationToken).ConfigureAwait(false);
@@ -185,20 +202,23 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
                 UninstallerUsed: string.Empty,
                 StandardOutput: null,
                 StandardError: null,
-                FailureReason: failureReason);
+                FailureReason: failureReason
+            );
         }
 
-        _logger.LogInformation("Uninstalling devtunnel CLI using '{Uninstaller}'.", uninstallerUsed);
+        _logger.LogInformation(
+            "Uninstalling devtunnel CLI using '{Uninstaller}'.",
+            uninstallerUsed
+        );
 
-        InstallerProcessResult result = await _processExecutor.RunAsync(
-            fileName,
-            arguments,
-            _options.InstallTimeout,
-            cancellationToken).ConfigureAwait(false);
+        InstallerProcessResult result = await _processExecutor
+            .RunAsync(fileName, arguments, _options.InstallTimeout, cancellationToken)
+            .ConfigureAwait(false);
 
         // winget returns 20 when the package is not installed — treat as success because the
         // desired postcondition (CLI absent) is already satisfied. Idempotent uninstall.
-        bool alreadyAbsent = uninstallerUsed == "winget" && result.ExitCode == WingetNoPackageFoundExitCode;
+        bool alreadyAbsent =
+            uninstallerUsed == "winget" && result.ExitCode == WingetNoPackageFoundExitCode;
 
         if (result.ExitCode != 0 && !alreadyAbsent)
         {
@@ -206,50 +226,75 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
                 "devtunnel CLI uninstallation via '{Uninstaller}' failed with exit code {ExitCode}. Stderr: {StandardError}",
                 uninstallerUsed,
                 result.ExitCode,
-                result.StandardError);
+                result.StandardError
+            );
 
             return new DevTunnelCliUninstallResult(
                 Success: false,
                 UninstallerUsed: uninstallerUsed,
                 StandardOutput: result.StandardOutput,
                 StandardError: result.StandardError,
-                FailureReason: $"Uninstaller '{uninstallerUsed}' exited with code {result.ExitCode}.");
+                FailureReason: $"Uninstaller '{uninstallerUsed}' exited with code {result.ExitCode}."
+            );
         }
 
-        _logger.LogInformation("devtunnel CLI uninstalled successfully via '{Uninstaller}'.", uninstallerUsed);
+        _logger.LogInformation(
+            "devtunnel CLI uninstalled successfully via '{Uninstaller}'.",
+            uninstallerUsed
+        );
 
         return new DevTunnelCliUninstallResult(
             Success: true,
             UninstallerUsed: uninstallerUsed,
             StandardOutput: result.StandardOutput,
             StandardError: result.StandardError,
-            FailureReason: null);
+            FailureReason: null
+        );
     }
 
-    private async ValueTask<(string? UninstallerUsed, string? FileName, IReadOnlyList<string>? Arguments)> ResolveUninstallerAsync(
-        CancellationToken cancellationToken)
+    private async ValueTask<(
+        string? UninstallerUsed,
+        string? FileName,
+        IReadOnlyList<string>? Arguments
+    )> ResolveUninstallerAsync(CancellationToken cancellationToken)
     {
         if (_platformDetector.IsWindows())
         {
-            bool wingetAvailable = await ProbeAsync("winget", ["--version"], cancellationToken).ConfigureAwait(false);
+            bool wingetAvailable = await ProbeAsync("winget", ["--version"], cancellationToken)
+                .ConfigureAwait(false);
             if (!wingetAvailable)
             {
                 return (null, null, null);
             }
 
-            return ("winget", "winget",
-                ["uninstall", "Microsoft.devtunnel", "--accept-source-agreements", "--scope", "user", "--silent"]);
+            return (
+                "winget",
+                "winget",
+                [
+                    "uninstall",
+                    "Microsoft.devtunnel",
+                    "--accept-source-agreements",
+                    "--scope",
+                    "user",
+                    "--silent",
+                ]
+            );
         }
 
         if (_platformDetector.IsMacOS())
         {
-            bool brewAvailable = await ProbeAsync("brew", ["--version"], cancellationToken).ConfigureAwait(false);
+            bool brewAvailable = await ProbeAsync("brew", ["--version"], cancellationToken)
+                .ConfigureAwait(false);
             if (!brewAvailable)
             {
                 return (null, null, null);
             }
 
-            return ("brew", "bash", ["-c", "HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --cask devtunnel"]);
+            return (
+                "brew",
+                "bash",
+                ["-c", "HOMEBREW_NO_AUTO_UPDATE=1 brew uninstall --cask devtunnel"]
+            );
         }
 
         // Linux: rm -rf is always available via bash regardless of whether curl/wget is present.
@@ -273,19 +318,34 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
         return "Could not determine uninstall method for this platform.";
     }
 
-    private static (string FileName, IReadOnlyList<string> Arguments) GetInstallCommand(string installer)
+    private static (string FileName, IReadOnlyList<string> Arguments) GetInstallCommand(
+        string installer
+    )
     {
         return installer switch
         {
             // --scope user avoids UAC elevation; --silent suppresses the per-package installer UI.
-            "winget" => ("winget",
-                ["install", "Microsoft.devtunnel", "--accept-source-agreements", "--accept-package-agreements", "--scope", "user", "--silent"]),
+            "winget" => (
+                "winget",
+                [
+                    "install",
+                    "Microsoft.devtunnel",
+                    "--accept-source-agreements",
+                    "--accept-package-agreements",
+                    "--scope",
+                    "user",
+                    "--silent",
+                ]
+            ),
             // Invoke via bash so HOMEBREW_NO_AUTO_UPDATE suppresses interactive brew self-update.
             "brew" => ("bash", ["-c", "HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask devtunnel"]),
             // Linux install script is designed for non-interactive use; no extra flags needed.
             "curl" => ("bash", ["-c", "curl -sL https://aka.ms/DevTunnelCliInstall | bash"]),
             "wget" => ("bash", ["-c", "wget -qO- https://aka.ms/DevTunnelCliInstall | bash"]),
-            _ => throw new ArgumentException($"Unknown installer '{installer}'.", nameof(installer)),
+            _ => throw new ArgumentException(
+                $"Unknown installer '{installer}'.",
+                nameof(installer)
+            ),
         };
     }
 }

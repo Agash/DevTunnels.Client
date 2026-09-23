@@ -10,9 +10,13 @@ public sealed class DevTunnelsClientTests
     {
         var options = new DevTunnelsClientOptions
         {
-            CliPathOverride = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "devtunnel.exe"),
+            CliPathOverride = Path.Combine(
+                Path.GetTempPath(),
+                Guid.NewGuid().ToString("N"),
+                "devtunnel.exe"
+            ),
             IncludeKnownInstallLocations = false,
-            IncludePathLookup = false
+            IncludePathLookup = false,
         };
 
         var client = new DevTunnelsClient(options);

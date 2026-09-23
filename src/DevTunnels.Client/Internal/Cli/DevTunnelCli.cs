@@ -8,18 +8,33 @@ using Microsoft.Extensions.Logging;
 
 namespace DevTunnels.Client.Internal.Cli;
 
-internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExecutor processExecutor, ILogger logger)
+internal sealed class DevTunnelCli(
+    DevTunnelsClientOptions options,
+    IProcessExecutor processExecutor,
+    ILogger logger
+)
 {
     public const int ResourceConflictsWithExistingExitCode = 1;
     public const int ResourceNotFoundExitCode = 2;
 
-    public async Task<DevTunnelCliProbeResult> ProbeCandidateAsync(string candidate, CancellationToken cancellationToken)
+    public async Task<DevTunnelCliProbeResult> ProbeCandidateAsync(
+        string candidate,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            ProcessExecutionResult result = await processExecutor.RunAsync(
-                CreateSpec(candidate, ["--version", "--nologo"], useShellExecute: false, workingDirectory: null),
-                cancellationToken).ConfigureAwait(false);
+            ProcessExecutionResult result = await processExecutor
+                .RunAsync(
+                    CreateSpec(
+                        candidate,
+                        ["--version", "--nologo"],
+                        useShellExecute: false,
+                        workingDirectory: null
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
 
             string rawOutput = string.IsNullOrWhiteSpace(result.StandardOutput)
                 ? result.StandardError.Trim()
@@ -27,12 +42,28 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
 
             if (result.ExitCode != 0)
             {
-                return new DevTunnelCliProbeResult(false, null, null, rawOutput, false, $"'{candidate} --version' exited with code {result.ExitCode}.");
+                return new DevTunnelCliProbeResult(
+                    false,
+                    null,
+                    null,
+                    rawOutput,
+                    false,
+                    $"'{candidate} --version' exited with code {result.ExitCode}."
+                );
             }
 
-            if (!DevTunnelVersionParser.TryParse(rawOutput, out Version? version) || version is null)
+            if (
+                !DevTunnelVersionParser.TryParse(rawOutput, out Version? version) || version is null
+            )
             {
-                return new DevTunnelCliProbeResult(false, candidate, null, rawOutput, false, "The devtunnel CLI returned a version string that could not be parsed.");
+                return new DevTunnelCliProbeResult(
+                    false,
+                    candidate,
+                    null,
+                    rawOutput,
+                    false,
+                    "The devtunnel CLI returned a version string that could not be parsed."
+                );
             }
 
             bool meetsMinimumVersion = version >= options.MinimumSupportedVersion;
@@ -42,23 +73,42 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 version,
                 rawOutput,
                 meetsMinimumVersion,
-                meetsMinimumVersion ? null : $"Resolved devtunnel CLI version {version} is below the minimum supported version {options.MinimumSupportedVersion}.");
+                meetsMinimumVersion
+                    ? null
+                    : $"Resolved devtunnel CLI version {version} is below the minimum supported version {options.MinimumSupportedVersion}."
+            );
         }
-        catch (Exception ex) when (ex is InvalidOperationException or OperationCanceledException or System.ComponentModel.Win32Exception)
+        catch (Exception ex)
+            when (ex
+                    is InvalidOperationException
+                        or OperationCanceledException
+                        or System.ComponentModel.Win32Exception
+            )
         {
             if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogDebug(ex, "Failed to probe devtunnel CLI candidate '{Candidate}'.", candidate);
+                logger.LogDebug(
+                    ex,
+                    "Failed to probe devtunnel CLI candidate '{Candidate}'.",
+                    candidate
+                );
             }
 
             return new DevTunnelCliProbeResult(false, null, null, null, false, ex.Message);
         }
     }
 
-    public Task<DevTunnelCommandResult> RunRawAsync(IReadOnlyList<string> arguments, bool useShellExecute, CancellationToken cancellationToken) =>
-        RunAsync(arguments, useShellExecute, workingDirectory: null, cancellationToken);
+    public Task<DevTunnelCommandResult> RunRawAsync(
+        IReadOnlyList<string> arguments,
+        bool useShellExecute,
+        CancellationToken cancellationToken
+    ) => RunAsync(arguments, useShellExecute, workingDirectory: null, cancellationToken);
 
-    public Task<DevTunnelCommandResult> CreateTunnelAsync(string tunnelId, DevTunnelOptions tunnelOptions, CancellationToken cancellationToken) =>
+    public Task<DevTunnelCommandResult> CreateTunnelAsync(
+        string tunnelId,
+        DevTunnelOptions tunnelOptions,
+        CancellationToken cancellationToken
+    ) =>
         RunAsync(
             new ArgsBuilder(["create"])
                 .Add(tunnelId)
@@ -70,9 +120,14 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> UpdateTunnelAsync(string tunnelId, DevTunnelOptions tunnelOptions, CancellationToken cancellationToken) =>
+    public Task<DevTunnelCommandResult> UpdateTunnelAsync(
+        string tunnelId,
+        DevTunnelOptions tunnelOptions,
+        CancellationToken cancellationToken
+    ) =>
         RunAsync(
             new ArgsBuilder(["update", tunnelId])
                 .AddIfNotNull("--description", tunnelOptions.Description)
@@ -82,21 +137,39 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> ShowTunnelAsync(string tunnelId, CancellationToken cancellationToken) =>
-        RunAsync(["show", tunnelId, "--json", "--nologo"], false, null, cancellationToken);
+    public Task<DevTunnelCommandResult> ShowTunnelAsync(
+        string tunnelId,
+        CancellationToken cancellationToken
+    ) => RunAsync(["show", tunnelId, "--json", "--nologo"], false, null, cancellationToken);
 
-    public Task<DevTunnelCommandResult> DeleteTunnelAsync(string tunnelId, CancellationToken cancellationToken) =>
-        RunAsync(["delete", tunnelId, "--force", "--json", "--nologo"], false, null, cancellationToken);
+    public Task<DevTunnelCommandResult> DeleteTunnelAsync(
+        string tunnelId,
+        CancellationToken cancellationToken
+    ) =>
+        RunAsync(
+            ["delete", tunnelId, "--force", "--json", "--nologo"],
+            false,
+            null,
+            cancellationToken
+        );
 
     public Task<DevTunnelCommandResult> ListTunnelsAsync(CancellationToken cancellationToken) =>
         RunAsync(["list", "--json", "--nologo"], false, null, cancellationToken);
 
-    public Task<DevTunnelCommandResult> ListPortsAsync(string tunnelId, CancellationToken cancellationToken) =>
-        RunAsync(["port", "list", tunnelId, "--json", "--nologo"], false, null, cancellationToken);
+    public Task<DevTunnelCommandResult> ListPortsAsync(
+        string tunnelId,
+        CancellationToken cancellationToken
+    ) => RunAsync(["port", "list", tunnelId, "--json", "--nologo"], false, null, cancellationToken);
 
-    public Task<DevTunnelCommandResult> CreatePortAsync(string tunnelId, int portNumber, DevTunnelPortOptions portOptions, CancellationToken cancellationToken) =>
+    public Task<DevTunnelCommandResult> CreatePortAsync(
+        string tunnelId,
+        int portNumber,
+        DevTunnelPortOptions portOptions,
+        CancellationToken cancellationToken
+    ) =>
         RunAsync(
             new ArgsBuilder(["port", "create", tunnelId])
                 .AddIfNotNull("--port-number", portNumber.ToString(CultureInfo.InvariantCulture))
@@ -107,12 +180,35 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> DeletePortAsync(string tunnelId, int portNumber, CancellationToken cancellationToken) =>
-        RunAsync(["port", "delete", tunnelId, "--port-number", portNumber.ToString(CultureInfo.InvariantCulture), "--json", "--nologo"], false, null, cancellationToken);
+    public Task<DevTunnelCommandResult> DeletePortAsync(
+        string tunnelId,
+        int portNumber,
+        CancellationToken cancellationToken
+    ) =>
+        RunAsync(
+            [
+                "port",
+                "delete",
+                tunnelId,
+                "--port-number",
+                portNumber.ToString(CultureInfo.InvariantCulture),
+                "--json",
+                "--nologo",
+            ],
+            false,
+            null,
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> UpdatePortAsync(string tunnelId, int portNumber, DevTunnelPortOptions portOptions, CancellationToken cancellationToken) =>
+    public Task<DevTunnelCommandResult> UpdatePortAsync(
+        string tunnelId,
+        int portNumber,
+        DevTunnelPortOptions portOptions,
+        CancellationToken cancellationToken
+    ) =>
         RunAsync(
             new ArgsBuilder(["port", "update", tunnelId])
                 .AddIfNotNull("--port-number", portNumber.ToString(CultureInfo.InvariantCulture))
@@ -123,9 +219,14 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> GetAccessTokenAsync(string tunnelId, IReadOnlyList<string>? scopes, CancellationToken cancellationToken)
+    public Task<DevTunnelCommandResult> GetAccessTokenAsync(
+        string tunnelId,
+        IReadOnlyList<string>? scopes,
+        CancellationToken cancellationToken
+    )
     {
         IReadOnlyList<string> effectiveScopes = scopes is { Count: > 0 } ? scopes : ["connect"];
         return RunAsync(
@@ -135,10 +236,15 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
     }
 
-    public Task<DevTunnelCommandResult> ListAccessAsync(string tunnelId, int? portNumber, CancellationToken cancellationToken) =>
+    public Task<DevTunnelCommandResult> ListAccessAsync(
+        string tunnelId,
+        int? portNumber,
+        CancellationToken cancellationToken
+    ) =>
         RunAsync(
             new ArgsBuilder(["access", "list", tunnelId])
                 .AddIfNotNull("--port-number", portNumber?.ToString(CultureInfo.InvariantCulture))
@@ -147,9 +253,14 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> ResetAccessAsync(string tunnelId, int? portNumber, CancellationToken cancellationToken) =>
+    public Task<DevTunnelCommandResult> ResetAccessAsync(
+        string tunnelId,
+        int? portNumber,
+        CancellationToken cancellationToken
+    ) =>
         RunAsync(
             new ArgsBuilder(["access", "reset", tunnelId])
                 .AddIfNotNull("--port-number", portNumber?.ToString(CultureInfo.InvariantCulture))
@@ -158,32 +269,55 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 .Build(),
             false,
             null,
-            cancellationToken);
+            cancellationToken
+        );
 
-    public Task<DevTunnelCommandResult> CreateAccessAsync(string tunnelId, int? portNumber, bool anonymous, bool deny, CancellationToken cancellationToken) => !anonymous && !deny
-            ? throw new ArgumentException("Either anonymous or deny must be true.", nameof(anonymous))
+    public Task<DevTunnelCommandResult> CreateAccessAsync(
+        string tunnelId,
+        int? portNumber,
+        bool anonymous,
+        bool deny,
+        CancellationToken cancellationToken
+    ) =>
+        !anonymous && !deny
+            ? throw new ArgumentException(
+                "Either anonymous or deny must be true.",
+                nameof(anonymous)
+            )
             : RunAsync(
-            new ArgsBuilder(["access", "create", tunnelId])
-                .AddIfNotNull("--port-number", portNumber?.ToString(CultureInfo.InvariantCulture))
-                .AddIfTrue("--deny", deny)
-                .AddIfTrue("--anonymous", anonymous)
-                .Add("--json")
-                .Add("--nologo")
-                .Build(),
-            false,
-            null,
-            cancellationToken);
+                new ArgsBuilder(["access", "create", tunnelId])
+                    .AddIfNotNull(
+                        "--port-number",
+                        portNumber?.ToString(CultureInfo.InvariantCulture)
+                    )
+                    .AddIfTrue("--deny", deny)
+                    .AddIfTrue("--anonymous", anonymous)
+                    .Add("--json")
+                    .Add("--nologo")
+                    .Build(),
+                false,
+                null,
+                cancellationToken
+            );
 
     public Task<DevTunnelCommandResult> LoginMicrosoftAsync(CancellationToken cancellationToken) =>
         RunAsync(["user", "login", "--entra", "--json", "--nologo"], true, null, cancellationToken);
 
     public Task<DevTunnelCommandResult> LoginGitHubAsync(CancellationToken cancellationToken) =>
-        RunAsync(["user", "login", "--github", "--json", "--nologo"], true, null, cancellationToken);
+        RunAsync(
+            ["user", "login", "--github", "--json", "--nologo"],
+            true,
+            null,
+            cancellationToken
+        );
 
     public Task<DevTunnelCommandResult> LogoutAsync(CancellationToken cancellationToken) =>
         RunAsync(["user", "logout", "--json", "--nologo"], false, null, cancellationToken);
 
-    public Task<IRunningProcess> StartHostAsync(DevTunnelHostStartOptions hostOptions, CancellationToken cancellationToken)
+    public Task<IRunningProcess> StartHostAsync(
+        DevTunnelHostStartOptions hostOptions,
+        CancellationToken cancellationToken
+    )
     {
         IReadOnlyList<string> args = new ArgsBuilder(["host"])
             .AddIfNotNull(null, hostOptions.TunnelId)
@@ -191,10 +325,18 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
             .Add("--nologo")
             .Build();
 
-        return processExecutor.StartAsync(CreateSpec(GetResolvedCliPath(), args, false, hostOptions.WorkingDirectory), cancellationToken);
+        return processExecutor.StartAsync(
+            CreateSpec(GetResolvedCliPath(), args, false, hostOptions.WorkingDirectory),
+            cancellationToken
+        );
     }
 
-    private async Task<DevTunnelCommandResult> RunAsync(IReadOnlyList<string> args, bool useShellExecute, string? workingDirectory, CancellationToken cancellationToken)
+    private async Task<DevTunnelCommandResult> RunAsync(
+        IReadOnlyList<string> args,
+        bool useShellExecute,
+        string? workingDirectory,
+        CancellationToken cancellationToken
+    )
     {
         if (logger.IsEnabled(LogLevel.Trace))
         {
@@ -202,7 +344,8 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
                 "Invoking devtunnel CLI{ShellExecuteInfo}: {CliPath} {Arguments}",
                 useShellExecute ? " (UseShellExecute=true)" : string.Empty,
                 GetResolvedCliPath(),
-                string.Join(' ', args));
+                string.Join(' ', args)
+            );
         }
 
         // Interactive shell-execute commands (login) are user-driven; skip timeout for those.
@@ -215,15 +358,28 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
 
         try
         {
-            ProcessExecutionResult result = await processExecutor.RunAsync(
-                CreateSpec(GetResolvedCliPath(), args, useShellExecute, workingDirectory),
-                timeoutCts?.Token ?? cancellationToken).ConfigureAwait(false);
+            ProcessExecutionResult result = await processExecutor
+                .RunAsync(
+                    CreateSpec(GetResolvedCliPath(), args, useShellExecute, workingDirectory),
+                    timeoutCts?.Token ?? cancellationToken
+                )
+                .ConfigureAwait(false);
 
-            return new DevTunnelCommandResult(result.ExitCode, result.StandardOutput, result.StandardError);
+            return new DevTunnelCommandResult(
+                result.ExitCode,
+                result.StandardOutput,
+                result.StandardError
+            );
         }
-        catch (OperationCanceledException) when (timeoutCts is not null && timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (timeoutCts is not null
+                && timeoutCts.IsCancellationRequested
+                && !cancellationToken.IsCancellationRequested
+            )
         {
-            throw new TimeoutException($"The devtunnel CLI command '{string.Join(' ', args)}' timed out after {options.CommandTimeout}.");
+            throw new TimeoutException(
+                $"The devtunnel CLI command '{string.Join(' ', args)}' timed out after {options.CommandTimeout}."
+            );
         }
         finally
         {
@@ -231,8 +387,12 @@ internal sealed class DevTunnelCli(DevTunnelsClientOptions options, IProcessExec
         }
     }
 
-    private static ProcessSpec CreateSpec(string fileName, IReadOnlyList<string> arguments, bool useShellExecute, string? workingDirectory) =>
-        new(fileName, arguments, useShellExecute, workingDirectory, Encoding.UTF8, Encoding.UTF8);
+    private static ProcessSpec CreateSpec(
+        string fileName,
+        IReadOnlyList<string> arguments,
+        bool useShellExecute,
+        string? workingDirectory
+    ) => new(fileName, arguments, useShellExecute, workingDirectory, Encoding.UTF8, Encoding.UTF8);
 
     private string GetResolvedCliPath()
     {

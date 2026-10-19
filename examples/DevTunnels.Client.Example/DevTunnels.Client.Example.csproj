@@ -5,6 +5,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>false</IsPackable>
     <PublishAot>true</PublishAot>
+    <!-- A native executable ships no XML docs. The Compile-only AOT publish (dotnet/sdk#54515) also
+         never copies them into OutDir, where publish looks (MSB3030). -->
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 

@@ -2,19 +2,26 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+  <!-- $(DotNetPackageVersion) follows the target framework; Directory.Build.targets sets it. -->
   <ItemGroup>
     <PackageVersion Include="DotNet.ReproducibleBuilds" Version="2.0.5" />
     <PackageVersion
       Include="Microsoft.Extensions.DependencyInjection.Abstractions"
-      Version="10.0.14"
+      Version="$(DotNetPackageVersion)"
     />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="$(DotNetPackageVersion)" />
+    <PackageVersion
+      Include="Microsoft.Extensions.Logging.Abstractions"
+      Version="$(DotNetPackageVersion)"
+    />
+    <PackageVersion
+      Include="Microsoft.Extensions.Logging.Console"
+      Version="$(DotNetPackageVersion)"
+    />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="$(DotNetPackageVersion)" />
     <PackageVersion
       Include="Microsoft.Extensions.Options.ConfigurationExtensions"
-      Version="10.0.14"
+      Version="$(DotNetPackageVersion)"
     />
     <PackageVersion Include="MinVer" Version="8.0.0" />
     <PackageVersion Include="MSTest" Version="4.5.1" />

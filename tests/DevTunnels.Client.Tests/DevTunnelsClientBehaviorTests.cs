@@ -65,6 +65,127 @@ public sealed class DevTunnelsClientBehaviorTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    public async Task CreateOrUpdateTunnelAsync_AccessAlreadyMatches_LeavesItAlone()
+    {
+        FakeProcessExecutor executor = new();
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                DevTunnelCli.ResourceConflictsWithExistingExitCode,
+                string.Empty,
+                "exists"
+            )
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """{ "tunnel": { "tunnelId": "sw-existing.uks1" } }""",
+                string.Empty
+            )
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """{ "accessControlEntries": [{ "type": "Anonymous", "isDeny": false, "isInherited": false, "subjects": [], "scopes": ["connect"] }] }""",
+                string.Empty
+            )
+        );
+        DevTunnelsClient client = new(
+            new DevTunnelsClientOptions(),
+            NullLogger<DevTunnelsClient>.Instance,
+            executor
+        );
+
+        DevTunnelStatus result = await client.CreateOrUpdateTunnelAsync(
+            "sw-existing",
+            new DevTunnelOptions { AllowAnonymous = true },
+            TestContext.CancellationToken
+        );
+
+        Assert.AreEqual("sw-existing.uks1", result.TunnelId);
+        Assert.HasCount(3, executor.RunInvocations);
+    }
+
+    [TestMethod]
+    public async Task CreateOrUpdateTunnelAsync_ConflictThenNotFound_NamesTheInconsistency()
+    {
+        FakeProcessExecutor executor = new();
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                DevTunnelCli.ResourceConflictsWithExistingExitCode,
+                string.Empty,
+                "exists"
+            )
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                DevTunnelCli.ResourceNotFoundExitCode,
+                string.Empty,
+                "Tunnel not found"
+            )
+        );
+        DevTunnelsClient client = new(
+            new DevTunnelsClientOptions { MaxCliAttempts = 1 },
+            NullLogger<DevTunnelsClient>.Instance,
+            executor
+        );
+
+        DevTunnelsCliException exception = await Assert.ThrowsExactlyAsync<DevTunnelsCliException>(
+            async () =>
+                await client.CreateOrUpdateTunnelAsync(
+                    "sw-ghost",
+                    new DevTunnelOptions(),
+                    TestContext.CancellationToken
+                )
+        );
+
+        StringAssert.Contains(exception.Message, "inconsistent");
+    }
+
+    [TestMethod]
+    public async Task CreateOrUpdateTunnelAsync_ExpirationOutOfRange_Throws()
+    {
+        DevTunnelsClient client = new(
+            new DevTunnelsClientOptions(),
+            NullLogger<DevTunnelsClient>.Instance,
+            new FakeProcessExecutor()
+        );
+
+        _ = await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(async () =>
+            await client.CreateOrUpdateTunnelAsync(
+                "sw-expiry",
+                new DevTunnelOptions { ExpirationHours = 721 },
+                TestContext.CancellationToken
+            )
+        );
+    }
+
+    [TestMethod]
+    public async Task CreateOrUpdateTunnelAsync_Expiration_PassesItAsHours()
+    {
+        FakeProcessExecutor executor = new();
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(
+                0,
+                """{ "tunnel": { "tunnelId": "sw-new.uks1" } }""",
+                string.Empty
+            )
+        );
+        DevTunnelsClient client = new(
+            new DevTunnelsClientOptions(),
+            NullLogger<DevTunnelsClient>.Instance,
+            executor
+        );
+
+        _ = await client.CreateOrUpdateTunnelAsync(
+            "sw-new",
+            new DevTunnelOptions { ExpirationHours = 24 },
+            TestContext.CancellationToken
+        );
+
+        CollectionAssert.Contains(executor.RunInvocations[0].Arguments.ToList(), "24h");
+    }
+
+    [TestMethod]
     public async Task CreateOrUpdateTunnelAsync_WhenTunnelExists_UpdatesAndReconcilesAccess()
     {
         FakeProcessExecutor executor = new();
@@ -83,6 +204,9 @@ public sealed class DevTunnelsClientBehaviorTests
                 """,
                 string.Empty
             )
+        );
+        executor.EnqueueRunResult(
+            new ProcessExecutionResult(0, """{ "accessControlEntries": [] }""", string.Empty)
         );
         executor.EnqueueRunResult(
             new ProcessExecutionResult(0, """{ "accessControlEntries": [] }""", string.Empty)
@@ -113,7 +237,7 @@ public sealed class DevTunnelsClientBehaviorTests
         );
 
         Assert.AreEqual("streamweaver-webhooks-01", result.TunnelId);
-        Assert.HasCount(4, executor.RunInvocations);
+        Assert.HasCount(5, executor.RunInvocations);
         CollectionAssert.AreEqual(
             s_expectedCreateArgs,
             executor.RunInvocations[0].Arguments.ToArray()

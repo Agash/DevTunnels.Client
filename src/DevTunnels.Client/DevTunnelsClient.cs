@@ -226,6 +226,18 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
                                 ct
                             )
                             .ConfigureAwait(false);
+                        if (updateResult.ExitCode == DevTunnelCli.ResourceNotFoundExitCode)
+                        {
+                            // The service said the ID exists, then that it does not. Retrying cannot
+                            // resolve that, so the caller is told to choose another ID.
+                            throw new DevTunnelsCliException(
+                                $"Dev tunnel '{tunnelId}' is in an inconsistent state in the service: "
+                                    + "creating it reports a conflict and updating it reports it missing. "
+                                    + "Use a different tunnel ID.",
+                                updateResult
+                            );
+                        }
+
                         EnsureSuccess(updateResult, $"update tunnel '{tunnelId}'");
                         DevTunnelStatus updated = Deserialize(
                             updateResult,
@@ -234,28 +246,36 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
                             "tunnel"
                         );
 
-                        DevTunnelCommandResult resetResult = await _cli.ResetAccessAsync(
-                                tunnelId,
-                                null,
-                                ct
-                            )
-                            .ConfigureAwait(false);
-                        EnsureSuccess(resetResult, $"reset access for tunnel '{tunnelId}'");
-
-                        if (options.AllowAnonymous)
+                        // Resetting drops anonymous access until it is added back, so a restart would
+                        // refuse public links for a moment. Access that already matches is left alone.
+                        if (
+                            await AllowsAnonymousAsync(tunnelId, ct).ConfigureAwait(false)
+                            != options.AllowAnonymous
+                        )
                         {
-                            DevTunnelCommandResult accessResult = await _cli.CreateAccessAsync(
+                            DevTunnelCommandResult resetResult = await _cli.ResetAccessAsync(
                                     tunnelId,
                                     null,
-                                    anonymous: true,
-                                    deny: false,
                                     ct
                                 )
                                 .ConfigureAwait(false);
-                            EnsureSuccess(
-                                accessResult,
-                                $"allow anonymous access for tunnel '{tunnelId}'"
-                            );
+                            EnsureSuccess(resetResult, $"reset access for tunnel '{tunnelId}'");
+
+                            if (options.AllowAnonymous)
+                            {
+                                DevTunnelCommandResult accessResult = await _cli.CreateAccessAsync(
+                                        tunnelId,
+                                        null,
+                                        anonymous: true,
+                                        deny: false,
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
+                                EnsureSuccess(
+                                    accessResult,
+                                    $"allow anonymous access for tunnel '{tunnelId}'"
+                                );
+                            }
                         }
 
                         return updated;
@@ -659,6 +679,20 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         }
     }
 
+    private async Task<bool> AllowsAnonymousAsync(
+        string tunnelId,
+        CancellationToken cancellationToken
+    )
+    {
+        DevTunnelAccessStatus access = await GetAccessAsync(tunnelId, null, cancellationToken)
+            .ConfigureAwait(false);
+        return access.AccessControlEntries.Any(static entry =>
+            !entry.IsDeny
+            && entry.Type.Equals("Anonymous", StringComparison.OrdinalIgnoreCase)
+            && entry.Scopes.Contains("connect", StringComparer.OrdinalIgnoreCase)
+        );
+    }
+
     private static void ValidateTunnelInput(string tunnelId, DevTunnelOptions options)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tunnelId);
@@ -667,6 +701,15 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         if (!DevTunnelValidation.IsValidTunnelId(tunnelId))
         {
             throw new ArgumentException($"Tunnel ID '{tunnelId}' is invalid.", nameof(tunnelId));
+        }
+
+        if (options.ExpirationHours is < 1 or > 720)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                options.ExpirationHours,
+                "A tunnel's expiration is between 1 and 720 hours."
+            );
         }
 
         foreach (string label in options.Labels)

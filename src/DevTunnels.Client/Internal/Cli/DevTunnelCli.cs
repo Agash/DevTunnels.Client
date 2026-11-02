@@ -104,6 +104,12 @@ internal sealed class DevTunnelCli(
         CancellationToken cancellationToken
     ) => RunAsync(arguments, useShellExecute, workingDirectory: null, cancellationToken);
 
+    private static string? GetExpirationArgument(DevTunnelOptions options) =>
+        options.ExpirationHours?.ToString(
+            "0'h'",
+            System.Globalization.CultureInfo.InvariantCulture
+        );
+
     public Task<DevTunnelCommandResult> CreateTunnelAsync(
         string tunnelId,
         DevTunnelOptions tunnelOptions,
@@ -113,6 +119,7 @@ internal sealed class DevTunnelCli(
             new ArgsBuilder(["create"])
                 .Add(tunnelId)
                 .AddIfNotNull("--description", tunnelOptions.Description)
+                .AddIfNotNull("--expiration", GetExpirationArgument(tunnelOptions))
                 .AddIfTrue("--allow-anonymous", tunnelOptions.AllowAnonymous)
                 .AddValues("--labels", tunnelOptions.Labels)
                 .Add("--json")
@@ -131,6 +138,7 @@ internal sealed class DevTunnelCli(
         RunAsync(
             new ArgsBuilder(["update", tunnelId])
                 .AddIfNotNull("--description", tunnelOptions.Description)
+                .AddIfNotNull("--expiration", GetExpirationArgument(tunnelOptions))
                 .AddValues("--add-labels", tunnelOptions.Labels)
                 .Add("--json")
                 .Add("--nologo")

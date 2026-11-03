@@ -35,6 +35,8 @@ internal sealed partial class DevTunnelHostSession : IDevTunnelHostSession
 
     public string? FailureReason { get; private set; }
 
+    public int? ProcessId => _runningProcess.ProcessId;
+
     public event EventHandler<DevTunnelHostOutputReceivedEventArgs>? OutputReceived;
 
     public async ValueTask WaitForReadyAsync(CancellationToken cancellationToken = default)

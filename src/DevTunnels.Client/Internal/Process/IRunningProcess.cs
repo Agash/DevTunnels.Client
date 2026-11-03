@@ -6,6 +6,8 @@ internal interface IRunningProcess : IAsyncDisposable
 
     int? ExitCode { get; }
 
+    int ProcessId { get; }
+
     Task WaitForExitAsync(CancellationToken cancellationToken);
 
     Task StopAsync(CancellationToken cancellationToken);

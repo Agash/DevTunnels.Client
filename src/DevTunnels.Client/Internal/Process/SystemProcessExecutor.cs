@@ -104,6 +104,8 @@ internal sealed class SystemProcessExecutor : IProcessExecutor
 
         public event Action<bool, string>? OutputReceived;
 
+        public int ProcessId => _process.Id;
+
         public int? ExitCode => _process.HasExited ? _process.ExitCode : null;
 
         public StringBuilder StandardOutput { get; }

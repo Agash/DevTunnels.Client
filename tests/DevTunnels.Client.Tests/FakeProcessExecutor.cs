@@ -59,6 +59,8 @@ internal sealed class FakeRunningProcess : IRunningProcess
 
     public int? ExitCode { get; private set; }
 
+    public int ProcessId { get; init; } = 4242;
+
     public void EmitStdOut(string line) => OutputReceived?.Invoke(false, line);
 
     public void EmitStdErr(string line) => OutputReceived?.Invoke(true, line);

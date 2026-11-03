@@ -365,6 +365,7 @@ public sealed class DevTunnelsClientBehaviorTests
         Assert.AreEqual(DevTunnelHostState.Running, session.State);
         Assert.AreEqual("streamweaver-webhooks-01", session.TunnelId);
         Assert.AreEqual(new Uri("https://abc123.devtunnels.ms"), session.PublicUrl);
+        Assert.AreEqual(4242, session.ProcessId);
     }
 
     [TestMethod]

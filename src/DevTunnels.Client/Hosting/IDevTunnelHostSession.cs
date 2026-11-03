@@ -31,6 +31,12 @@ public interface IDevTunnelHostSession : IAsyncDisposable
     string? FailureReason { get; }
 
     /// <summary>
+    /// Gets the ID of the <c>devtunnel host</c> process, or null when it is unknown. A host survives its parent
+    /// being killed, so a caller can record this to end a host left over from a crash.
+    /// </summary>
+    int? ProcessId => null;
+
+    /// <summary>
     /// Raised whenever the host process emits an output line.
     /// </summary>
     event EventHandler<DevTunnelHostOutputReceivedEventArgs>? OutputReceived;

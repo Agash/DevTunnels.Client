@@ -360,6 +360,16 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
                             ct
                         )
                         .ConfigureAwait(false);
+                    if (
+                        createResult.ExitCode == DevTunnelCli.ResourceConflictsWithExistingExitCode
+                        && await MatchingPortAsync(tunnelId, portNumber, options, ct)
+                            .ConfigureAwait(false)
+                            is { } existing
+                    )
+                    {
+                        return existing;
+                    }
+
                     if (createResult.ExitCode == DevTunnelCli.ResourceConflictsWithExistingExitCode)
                     {
                         DevTunnelCommandResult deleteResult = await _cli.DeletePortAsync(
@@ -383,7 +393,8 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
                     DevTunnelPortStatus status = Deserialize(
                         createResult,
                         DevTunnelsJsonSerializerContext.Default.DevTunnelPortStatus,
-                        "port status"
+                        "port status",
+                        "port"
                     );
 
                     if (options.AllowAnonymous.HasValue)
@@ -518,7 +529,8 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         return Deserialize(
             result,
             DevTunnelsJsonSerializerContext.Default.DevTunnelPortStatus,
-            "update port status"
+            "update port status",
+            "port"
         );
     }
 
@@ -589,7 +601,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
 
         if (
             options.TunnelId is { Length: > 0 } tunnelId
-            && !DevTunnelValidation.IsValidTunnelId(tunnelId)
+            && !DevTunnelValidation.IsValidTunnelReference(tunnelId)
         )
         {
             throw new ArgumentException($"Tunnel ID '{tunnelId}' is invalid.", nameof(options));
@@ -651,7 +663,10 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
                 using JsonDocument doc = JsonDocument.Parse(payload);
-                payload = doc.RootElement.GetProperty(propertyName).GetRawText();
+                if (doc.RootElement.TryGetProperty(propertyName, out JsonElement inner))
+                {
+                    payload = inner.GetRawText();
+                }
             }
 
             T? value = JsonSerializer.Deserialize(payload, typeInfo);
@@ -679,6 +694,58 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         }
     }
 
+    // A port already there with the wanted protocol and anonymous access is kept as it is.
+    private async Task<DevTunnelPortStatus?> MatchingPortAsync(
+        string tunnelId,
+        int portNumber,
+        DevTunnelPortOptions options,
+        CancellationToken cancellationToken
+    )
+    {
+        DevTunnelPortList ports = await GetPortListAsync(tunnelId, cancellationToken)
+            .ConfigureAwait(false);
+        DevTunnelPort? port = ports.Ports.FirstOrDefault(p => p.PortNumber == portNumber);
+        if (
+            port is null
+            || (
+                options.Protocol is { Length: > 0 } protocol
+                && !string.Equals(port.Protocol, protocol, StringComparison.OrdinalIgnoreCase)
+            )
+        )
+        {
+            return null;
+        }
+
+        if (options.AllowAnonymous is { } anonymous)
+        {
+            DevTunnelAccessStatus access = await GetAccessAsync(
+                    tunnelId,
+                    portNumber,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            if (Anonymous(access) != anonymous)
+            {
+                return null;
+            }
+        }
+
+        return new DevTunnelPortStatus
+        {
+            TunnelId = tunnelId,
+            PortNumber = port.PortNumber,
+            Protocol = port.Protocol,
+            ClientConnections = port.ClientConnections ?? 0,
+        };
+    }
+
+    private static bool Anonymous(DevTunnelAccessStatus access) =>
+        access.AccessControlEntries.Any(static entry =>
+            !entry.IsDeny
+            && entry.Type.Equals("Anonymous", StringComparison.OrdinalIgnoreCase)
+            && entry.Scopes.Contains("connect", StringComparer.OrdinalIgnoreCase)
+        );
+
     private async Task<bool> AllowsAnonymousAsync(
         string tunnelId,
         CancellationToken cancellationToken
@@ -686,11 +753,7 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
     {
         DevTunnelAccessStatus access = await GetAccessAsync(tunnelId, null, cancellationToken)
             .ConfigureAwait(false);
-        return access.AccessControlEntries.Any(static entry =>
-            !entry.IsDeny
-            && entry.Type.Equals("Anonymous", StringComparison.OrdinalIgnoreCase)
-            && entry.Scopes.Contains("connect", StringComparer.OrdinalIgnoreCase)
-        );
+        return Anonymous(access);
     }
 
     private static void ValidateTunnelInput(string tunnelId, DevTunnelOptions options)
@@ -727,8 +790,12 @@ public sealed class DevTunnelsClient : IDevTunnelsClient
         DevTunnelPortOptions options
     )
     {
-        ValidateTunnelInput(tunnelId, new DevTunnelOptions());
+        ArgumentException.ThrowIfNullOrWhiteSpace(tunnelId);
         ArgumentNullException.ThrowIfNull(options);
+        if (!DevTunnelValidation.IsValidTunnelReference(tunnelId))
+        {
+            throw new ArgumentException($"Tunnel ID '{tunnelId}' is invalid.", nameof(tunnelId));
+        }
 
         if (portNumber is <= 0 or > 65535)
         {

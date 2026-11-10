@@ -1,249 +1,190 @@
 # DevTunnels.Client
 
-Async-first .NET 10 client library for [Azure Dev Tunnels](https://aka.ms/devtunnels), wrapping the `devtunnel` CLI with a typed, cancellation-aware API.
+A .NET client for [Microsoft Dev Tunnels](https://aka.ms/devtunnels). It drives the `devtunnel` CLI through a
+typed, async, cancellable API: sign in, create a tunnel with a stable address, host it, and follow the host
+through disconnects, reconnects and takeovers.
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Agash/DevTunnels.Client/build.yml?branch=main&style=flat-square&logo=github&logoColor=white)](https://github.com/Agash/DevTunnels.Client/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `DevTunnels.Client` | Core typed CLI wrapper |
-| `DevTunnels.Client.DependencyInjection` | `IServiceCollection` registration helpers |
-| `DevTunnels.Client.Installer` | Platform-aware devtunnel CLI installer (winget / Homebrew / curl / wget) |
+| Package | Contents |
+| --- | --- |
+| `DevTunnels.Client` | The client, host sessions and the host monitor |
+| `DevTunnels.Client.DependencyInjection` | `AddDevTunnelsClient` for `IServiceCollection` |
+| `DevTunnels.Client.Installer` | Installs the `devtunnel` CLI (winget, Homebrew, or the official script) |
 
-## Requirements
-
-The `devtunnel` CLI must be installed. The library searches the following locations in order:
-
-1. `DevTunnelsClientOptions.CliPathOverride` — explicit path set in code
-2. `DEVTUNNEL_CLI_PATH` environment variable
-3. Well-known install paths (checked by default, no PATH entry required):
-   - **Windows** — `%LOCALAPPDATA%\Microsoft\DevTunnels\`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\`, `~/.devtunnels/bin/`, `~/bin/`
-   - **macOS** — `/opt/homebrew/bin/` (Homebrew), `/usr/local/bin/`, `~/bin/`
-   - **Linux** — `~/.local/bin/`, `~/bin/`, `/usr/local/bin/`
-4. System `PATH`
-
-**Minimum CLI version: 1.0.1435**
-
-The library enforces this at startup. If the installed CLI is older, `ProbeCliAsync()` returns
-`MeetsMinimumVersion = false` and operations that require the CLI will throw.
-
-Check your installed version:
-
-```bash
-devtunnel --version
-# expected output: Tunnel CLI version: 1.0.1435+<commit>
-```
-
-> The library was developed and integration-tested against **1.0.1435**. Later versions are
-> expected to be compatible; earlier versions are not supported.
->
-> The minimum can be overridden per-instance via `DevTunnelsClientOptions.MinimumSupportedVersion`
-> if you need to pin a different floor.
-
-**Install / update:**
-
-```bash
-# Windows
-winget install Microsoft.DevTunnel
-# or update an existing install:
-winget upgrade Microsoft.DevTunnel
-
-# macOS
-brew install devtunnel
-# or update:
-brew upgrade devtunnel
-
-# Linux / other
-curl -sL https://aka.ms/DevTunnelCliInstall | bash
-```
-
-Or follow the [official install guide](https://learn.microsoft.com/azure/developer/dev-tunnels/get-started).
-
-## Install
+Targets .NET 9, 10 and 11. Native AOT compatible.
 
 ```bash
 dotnet add package DevTunnels.Client
-dotnet add package DevTunnels.Client.DependencyInjection  # optional
 ```
 
-## Quick Start
+## Quick start
+
+A tunnel with an ID you choose keeps its address for as long as it exists. Create it once, host it on every
+run, and the public URL never changes.
 
 ```csharp
 using DevTunnels.Client;
+using DevTunnels.Client.Hosting;
+using DevTunnels.Client.Ports;
+using DevTunnels.Client.Tunnels;
 
-var client = new DevTunnelsClient(new DevTunnelsClientOptions
+DevTunnelsClient client = new();
+
+DevTunnelCliProbeResult probe = await client.ProbeCliAsync();
+if (!probe.IsInstalled || !probe.MeetsMinimumVersion)
 {
-    CommandTimeout = TimeSpan.FromSeconds(15)
-});
+    throw new InvalidOperationException(probe.FailureReason);
+}
 
-// Check CLI is available
-var probe = await client.ProbeCliAsync();
-Console.WriteLine($"devtunnel {probe.Version} installed: {probe.IsInstalled}");
+await client.EnsureLoggedInAsync();
 
-// Login
-await client.LoginAsync(LoginProvider.GitHub);
+// Create-or-update is idempotent: an existing tunnel keeps its address.
+DevTunnelStatus tunnel = await client.CreateOrUpdateTunnelAsync(
+    "my-app",
+    new DevTunnelOptions { AllowAnonymous = true, ExpirationHours = 720 });
 
-// Create a persistent tunnel with a port
-await client.CreateOrUpdateTunnelAsync("my-tunnel", new DevTunnelOptions
-{
-    Description = "My development tunnel",
-    AllowAnonymous = true,
-});
-await client.CreateOrReplacePortAsync("my-tunnel", 5000, new DevTunnelPortOptions
-{
-    Protocol = "http",  // devtunnel terminates TLS; local service speaks plain HTTP
-});
+// Use the ID the service returns from here on: it carries the region.
+await client.CreateOrReplacePortAsync(
+    tunnel.TunnelId,
+    5000,
+    new DevTunnelPortOptions { Protocol = "http", AllowAnonymous = true });
 
-// Host the tunnel and wait for it to be ready
-using var session = await client.StartHostSessionAsync(
-    new DevTunnelHostStartOptions { TunnelId = "my-tunnel" },
-    CancellationToken.None);
+await using IDevTunnelHostSession session = await client.StartHostSessionAsync(
+    new DevTunnelHostStartOptions { TunnelId = tunnel.TunnelId });
+await session.WaitForReadyAsync();
+Console.WriteLine(session.PublicUrl);
 
-await session.WaitForReadyAsync(CancellationToken.None);
-Console.WriteLine($"Public URL: {session.PublicUrl}");
+await using DevTunnelHostMonitor monitor = new(client, session);
+monitor.StatusChanged += (_, e) =>
+    Console.WriteLine($"{e.Current.Connectivity}, taken over: {e.Current.IsTakenOver}");
 
-// Keep alive until cancelled
-await session.WaitForExitAsync(CancellationToken.None);
+await session.WaitForExitAsync();
 ```
 
-## Dependency Injection
+## How tunnels behave
 
-```csharp
-using DevTunnels.Client.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+**Addresses.** A port's public URL is `https://<tunnel-id>-<port>.<region>.devtunnels.ms/`. The tunnel ID is
+yours to choose; the service picks the region and reports the full ID (`my-app.usw2`). Pass that reported ID
+to port and host calls. A tunnel belongs to the signed-in account, so two machines hosting the same ID
+compete for it: derive the ID from the machine when each machine needs its own address.
 
-var builder = Host.CreateApplicationBuilder(args);
+**Expiration.** The service deletes a tunnel after a period without activity: 30 days unless
+`ExpirationHours` says otherwise (1 to 720 hours, which is 30 days). The window slides, and every host
+connection renews it. `ExpirationHours = null` leaves the service's value, and an existing tunnel's, alone.
 
-builder.Services.AddDevTunnelsClient(options =>
-{
-    options.CommandTimeout = TimeSpan.FromSeconds(15);
-});
-```
+**Access.** Tunnels and ports are private to their owner by default. `AllowAnonymous` on the tunnel or on a
+port lets anyone with the URL connect. A browser opening the URL for the first time sees Microsoft's
+anti-phishing page once and continues from there; non-`GET` requests, requests that do not accept
+`text/html`, and requests with an `X-Tunnel-Skip-AntiPhishing-Page` header skip it, so webhooks and API
+clients are unaffected.
 
-## CLI Installer
+**Protocols.** A port is `http`, `https` or `auto` (the default). The relay terminates TLS, so a local
+plain-HTTP server uses `http`. The host rewrites the `Host` header of forwarded requests to `localhost`.
 
-`DevTunnels.Client.Installer` provides `IDevTunnelCliInstaller` / `DevTunnelCliInstaller` to
-detect the platform-appropriate package manager and install the `devtunnel` CLI automatically.
+**Sign-in.** Microsoft Entra ID, Microsoft accounts and GitHub accounts. The CLI caches the login in the
+system keychain for several days; `GetLoginStatusAsync` tells you when it has lapsed.
+
+**Restarts.** `CreateOrUpdateTunnelAsync` and `CreateOrReplacePortAsync` leave a tunnel, port and access
+that already match alone, so restarting an app does not drop anonymous access for a moment or change
+anything a client depends on.
+
+## Following a host
+
+`IDevTunnelHostSession` is the `devtunnel host` process. `DevTunnelHostMonitor` follows it for as long as it
+runs and reports a `DevTunnelHostStatus`:
+
+| `Connectivity` | Meaning |
+| --- | --- |
+| `Starting` | The host has not connected yet |
+| `Connected` | This host holds the relay and serves |
+| `Disconnected` | This host lost the relay. The CLI reconnects by itself, so this can recover |
+| `Stopped` | The host process ended. Start a new session |
+
+`IsTakenOver` is true when this host is disconnected while the service still counts a host on the tunnel:
+another machine or process on the account holds it. `Ports` maps each hosted port to its public URL, and
+`HostConnections` is the service's count across the whole account.
+
+The monitor reads the host's output first, because that is immediate and local, and asks the service every
+`ReconcileInterval` (30 seconds by default) and whenever the output is not understood.
+`WaitForConnectedAsync` completes on the first `Connected`; `ReconcileAsync` asks the service now.
+
+Disposing the monitor leaves the session running. A host process also outlives a killed parent and keeps a
+new host off the tunnel while it holds the relay, so record `IDevTunnelHostSession.ProcessId` and end a
+leftover host before starting the next one.
+
+## Requirements
+
+The `devtunnel` CLI, version 1.0.1435 or newer. `ProbeCliAsync` reports whether it is installed and new
+enough. The client looks for it in this order:
+
+1. `DevTunnelsClientOptions.CliPathOverride`
+2. The `DEVTUNNEL_CLI_PATH` environment variable
+3. Known install locations, which need no `PATH` entry:
+   - Windows: `%LOCALAPPDATA%\Microsoft\DevTunnels\`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\`,
+     `~/.devtunnels/bin/`, `~/bin/`
+   - macOS and Linux: `~/bin/`, `~/.local/bin/`, `/usr/local/bin/`, `/opt/homebrew/bin/`
+4. The system `PATH`
+
+## Installing the CLI
 
 ```csharp
 using DevTunnels.Client.Installer;
 
-var installer = new DevTunnelCliInstaller();
-
-string? detected = await installer.DetectInstallerAsync();
-Console.WriteLine($"Installer: {detected ?? "none"}");
-
+DevTunnelCliInstaller installer = new();
 DevTunnelCliInstallResult result = await installer.InstallAsync();
-if (result.Success)
-{
-    Console.WriteLine($"Installed via {result.InstallerUsed} at {result.InstalledPath}.");
-}
-else
-{
-    Console.WriteLine($"Install failed: {result.FailureReason}");
-}
+Console.WriteLine(result.Success
+    ? $"Installed with {result.InstallerUsed} at {result.InstalledPath}"
+    : $"Install failed: {result.FailureReason}");
 ```
 
-Supported installers per platform:
-
-| Platform | Installer | Install command |
-|----------|-----------|-----------------|
+| Platform | Installer | Command |
+| --- | --- | --- |
 | Windows | `winget` | `winget install Microsoft.devtunnel` (user scope, no elevation) |
 | macOS | `brew` | `brew install --cask devtunnel` |
-| macOS without Homebrew, Linux | `curl` | `curl -sL https://aka.ms/DevTunnelCliInstall \| bash` |
-| macOS without Homebrew, Linux | `wget` | `wget -qO- https://aka.ms/DevTunnelCliInstall \| bash` |
+| macOS without Homebrew, Linux | `curl` or `wget` | `curl -sL https://aka.ms/DevTunnelCliInstall \| bash` |
 
-`InstalledPath` reports where the CLI landed. A fresh user-scope install is not on the running process's
-`PATH`, but every location above is in the client's search list, so `ProbeCliAsync()` finds it right away
-without a restart.
+Every location an installer writes to is in the client's search list, so `ProbeCliAsync` finds a fresh
+install right away without a restart or a `PATH` change. `UninstallAsync` removes it again.
 
-Install it:
-
-```bash
-dotnet add package DevTunnels.Client.Installer
-```
-
-## API Surface
-
-### Authentication
-
-| Method | Description |
-|--------|-------------|
-| `ProbeCliAsync()` | Check that `devtunnel` is installed and get its version |
-| `GetLoginStatusAsync()` | Check current login state |
-| `EnsureLoggedInAsync(provider?)` | Login if not already, coalescing concurrent callers |
-| `LoginAsync(provider)` | Interactive browser login (GitHub or Microsoft) |
-| `LogoutAsync()` | Sign out |
-
-### Tunnels
-
-| Method | Description |
-|--------|-------------|
-| `CreateOrUpdateTunnelAsync(id, options)` | Create or update a named tunnel |
-| `GetTunnelAsync(id)` | Retrieve tunnel metadata |
-| `ListTunnelsAsync()` | List all tunnels for the account |
-| `DeleteTunnelAsync(id)` | Delete a tunnel |
-
-### Ports
-
-| Method | Description |
-|--------|-------------|
-| `CreateOrReplacePortAsync(tunnelId, port, options)` | Create or replace a port |
-| `UpdatePortAsync(tunnelId, port, options)` | Update port settings in-place |
-| `GetPortListAsync(tunnelId)` | List ports on a tunnel |
-| `DeletePortAsync(tunnelId, port)` | Remove a port |
-
-### Access
-
-| Method | Description |
-|--------|-------------|
-| `GetAccessAsync(tunnelId, port?)` | Get access policies |
-| `CreateAccessAsync(tunnelId, anonymous, deny?, port?)` | Add an access entry |
-| `ResetAccessAsync(tunnelId, port?)` | Reset to default access |
-| `GetAccessTokenAsync(tunnelId, scopes?)` | Issue a scoped access token |
-
-### Host Session
-
-| Member | Description |
-|--------|-------------|
-| `StartHostSessionAsync(options, ct)` | Start a `devtunnel host` process |
-| `IDevTunnelHostSession.WaitForReadyAsync(ct)` | Wait until the public URL is available |
-| `IDevTunnelHostSession.WaitForExitAsync(ct)` | Wait until the session ends |
-| `IDevTunnelHostSession.PublicUrl` | Live public HTTPS URL (standard-port, no explicit port in URL) |
-| `IDevTunnelHostSession.State` | Current session state |
-| `IDevTunnelHostSession.OutputReceived` | Raw CLI output event stream |
-| `IDevTunnelHostSession.StopAsync(ct)` | Gracefully stop the session |
-
-### Escape Hatch
+## Dependency injection
 
 ```csharp
-// Run any devtunnel command and capture stdout/stderr
-var result = await client.ExecuteRawAsync(["user", "show", "--json", "--nologo"]);
-Console.WriteLine(result.StandardOutput);
+using DevTunnels.Client.DependencyInjection;
+
+builder.Services.AddDevTunnelsClient(options => options.CommandTimeout = TimeSpan.FromSeconds(15));
 ```
 
-## Repository Layout
+`IDevTunnelsClient` is registered as a singleton.
 
-```
-src/
-  DevTunnels.Client/                      # core library
-  DevTunnels.Client.DependencyInjection/  # IServiceCollection helpers
-tests/
-  DevTunnels.Client.Tests/                # unit tests
-examples/
-  DevTunnels.Client.Example/              # interactive CLI sample (Spectre.Console)
-```
+## API
 
-## Build
+| Area | Members |
+| --- | --- |
+| CLI | `ProbeCliAsync`, `GetVersionAsync` |
+| Sign-in | `GetLoginStatusAsync`, `EnsureLoggedInAsync`, `LoginAsync`, `LogoutAsync` |
+| Tunnels | `CreateOrUpdateTunnelAsync`, `GetTunnelAsync`, `ListTunnelsAsync`, `DeleteTunnelAsync` |
+| Ports | `CreateOrReplacePortAsync`, `UpdatePortAsync`, `GetPortListAsync`, `DeletePortAsync` |
+| Access | `GetAccessAsync`, `CreateAccessAsync`, `ResetAccessAsync`, `GetAccessTokenAsync` |
+| Hosting | `StartHostSessionAsync`, `IDevTunnelHostSession`, `DevTunnelHostMonitor` |
+| Anything else | `ExecuteRawAsync(["user", "show", "--json", "--nologo"])` runs any CLI command |
+
+`DevTunnelsClientOptions` sets the CLI path, the command timeout (10 seconds), retries (3 attempts, 2
+seconds apart), the minimum CLI version and the preferred sign-in provider. CLI failures throw
+`DevTunnelsCliException`.
+
+## Building
 
 ```bash
-dotnet restore DevTunnels.Client.slnx
 dotnet build DevTunnels.Client.slnx -c Release
 dotnet test DevTunnels.Client.slnx -c Release --no-build
+dotnet csharpier check .
 ```
+
+`examples/DevTunnels.Client.Example` is an interactive sample.
 
 ## License
 

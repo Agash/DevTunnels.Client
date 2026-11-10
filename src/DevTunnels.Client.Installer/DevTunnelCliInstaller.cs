@@ -13,6 +13,7 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
     private readonly ILogger<DevTunnelCliInstaller> _logger;
     private readonly IInstallerProcessExecutor _processExecutor;
     private readonly IPlatformDetector _platformDetector;
+    private readonly Func<string, bool> _fileExists;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DevTunnelCliInstaller"/> class.
@@ -27,20 +28,23 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
             options ?? new DevTunnelCliInstallerOptions(),
             logger,
             new SystemInstallerProcessExecutor(),
-            new RuntimePlatformDetector()
+            new RuntimePlatformDetector(),
+            File.Exists
         ) { }
 
     internal DevTunnelCliInstaller(
         DevTunnelCliInstallerOptions options,
         ILogger<DevTunnelCliInstaller>? logger,
         IInstallerProcessExecutor processExecutor,
-        IPlatformDetector platformDetector
+        IPlatformDetector platformDetector,
+        Func<string, bool> fileExists
     )
     {
         _options = options;
         _logger = logger ?? NullLogger<DevTunnelCliInstaller>.Instance;
         _processExecutor = processExecutor;
         _platformDetector = platformDetector;
+        _fileExists = fileExists;
     }
 
     // winget exit code 20 (APPINSTALLER_CLI_ERROR_NO_APPLICATIONS_FOUND): the package is not
@@ -60,14 +64,16 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
                 : null;
         }
 
-        if (_platformDetector.IsMacOS())
+        // macOS prefers Homebrew; without it, and on Linux, the official install script (which covers both)
+        // runs through curl or wget.
+        if (
+            _platformDetector.IsMacOS()
+            && await ProbeAsync("brew", ["--version"], cancellationToken).ConfigureAwait(false)
+        )
         {
-            return await ProbeAsync("brew", ["--version"], cancellationToken).ConfigureAwait(false)
-                ? "brew"
-                : null;
+            return "brew";
         }
 
-        // Linux (else branch)
         if (await ProbeAsync("curl", ["--version"], cancellationToken).ConfigureAwait(false))
         {
             return "curl";
@@ -134,15 +140,17 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
             );
         }
 
+        string? installedPath = LocateInstalledCli(installer);
         _logger.LogInformation(
-            "devtunnel CLI installed successfully via '{Installer}'.",
-            installer
+            "devtunnel CLI installed successfully via '{Installer}' at '{InstalledPath}'.",
+            installer,
+            installedPath
         );
 
         return new DevTunnelCliInstallResult(
             Success: true,
             InstallerUsed: installer,
-            InstalledPath: null,
+            InstalledPath: installedPath,
             StandardOutput: result.StandardOutput,
             StandardError: result.StandardError,
             FailureReason: null
@@ -170,16 +178,34 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
         }
     }
 
+    // Where each installer puts the CLI. A user-scope install is not on the running process's PATH, so callers
+    // use this path (or the client's own search of these locations) instead of waiting for a restart.
+    private string? LocateInstalledCli(string installer)
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string[] candidates = installer switch
+        {
+            "winget" =>
+            [
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Microsoft",
+                    "WinGet",
+                    "Links",
+                    "devtunnel.exe"
+                ),
+            ],
+            "brew" => ["/opt/homebrew/bin/devtunnel", "/usr/local/bin/devtunnel"],
+            _ => [Path.Combine(home, "bin", "devtunnel")],
+        };
+        return candidates.FirstOrDefault(_fileExists);
+    }
+
     private string GetNoInstallerFailureReason()
     {
         if (_platformDetector.IsWindows())
         {
             return "winget is not installed. Please install winget (App Installer) from the Microsoft Store or install the devtunnel CLI manually.";
-        }
-
-        if (_platformDetector.IsMacOS())
-        {
-            return "Homebrew is not installed. Please install Homebrew from https://brew.sh or install the devtunnel CLI manually.";
         }
 
         return "Neither curl nor wget was found. Please install curl or wget, or install the devtunnel CLI manually from https://aka.ms/DevTunnelCliInstall.";
@@ -281,15 +307,11 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
             );
         }
 
-        if (_platformDetector.IsMacOS())
+        if (
+            _platformDetector.IsMacOS()
+            && await ProbeAsync("brew", ["--version"], cancellationToken).ConfigureAwait(false)
+        )
         {
-            bool brewAvailable = await ProbeAsync("brew", ["--version"], cancellationToken)
-                .ConfigureAwait(false);
-            if (!brewAvailable)
-            {
-                return (null, null, null);
-            }
-
             return (
                 "brew",
                 "bash",
@@ -297,26 +319,13 @@ public sealed class DevTunnelCliInstaller : IDevTunnelCliInstaller
             );
         }
 
-        // Linux: rm -rf is always available via bash regardless of whether curl/wget is present.
-        // The Linux install script places the CLI at ~/.devtunnel; remove that directory.
-        // Note: PATH entries added to shell profiles (.bashrc / .zshrc) are not removed here.
-        return ("bash", "bash", ["-c", "rm -rf \"$HOME/.devtunnel\""]);
+        // The official install script (Linux, and macOS without Homebrew) writes a single binary to
+        // ~/bin/devtunnel. The PATH line it adds to a shell profile is left in place: it is harmless.
+        return ("bash", "bash", ["-c", "rm -f \"$HOME/bin/devtunnel\""]);
     }
 
-    private string GetNoUninstallerFailureReason()
-    {
-        if (_platformDetector.IsWindows())
-        {
-            return "winget is not installed. Cannot uninstall devtunnel CLI automatically. Please uninstall it manually.";
-        }
-
-        if (_platformDetector.IsMacOS())
-        {
-            return "Homebrew is not installed. Cannot uninstall devtunnel CLI automatically. Please uninstall it manually.";
-        }
-
-        return "Could not determine uninstall method for this platform.";
-    }
+    private static string GetNoUninstallerFailureReason() =>
+        "winget is not installed. Cannot uninstall devtunnel CLI automatically. Please uninstall it manually.";
 
     private static (string FileName, IReadOnlyList<string> Arguments) GetInstallCommand(
         string installer

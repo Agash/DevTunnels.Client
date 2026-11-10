@@ -84,12 +84,13 @@ public sealed class DevTunnelCliInstallerTests
     }
 
     [TestMethod]
-    public async Task DetectInstallerAsync_OnMacOS_WithoutBrew_ReturnsNull()
+    public async Task DetectInstallerAsync_OnMacOS_WithoutBrew_FallsBackToCurl()
     {
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         executor.EnqueueResult(
             new InstallerProcessResult(127, string.Empty, "brew: command not found")
         );
+        executor.EnqueueResult(new InstallerProcessResult(0, "curl 8.7.1", string.Empty));
 
         DevTunnelCliInstaller installer = CreateInstaller(
             executor,
@@ -101,7 +102,7 @@ public sealed class DevTunnelCliInstallerTests
             .DetectInstallerAsync(CancellationToken.None)
             .ConfigureAwait(false);
 
-        Assert.IsNull(result);
+        Assert.AreEqual("curl", result);
     }
 
     // -------------------------------------------------------------------------
@@ -450,13 +451,14 @@ public sealed class DevTunnelCliInstallerTests
     }
 
     [TestMethod]
-    public async Task UninstallAsync_OnMacOS_WithoutBrew_ReturnsFailure()
+    public async Task UninstallAsync_OnMacOS_WithoutBrew_RemovesScriptBinary()
     {
         FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
         // brew probe fails
         executor.EnqueueResult(
             new InstallerProcessResult(127, string.Empty, "brew: command not found")
         );
+        executor.EnqueueResult(new InstallerProcessResult(0, string.Empty, string.Empty));
 
         DevTunnelCliInstaller installer = CreateInstaller(
             executor,
@@ -468,10 +470,12 @@ public sealed class DevTunnelCliInstallerTests
             .UninstallAsync(CancellationToken.None)
             .ConfigureAwait(false);
 
-        Assert.IsFalse(result.Success);
-        Assert.AreEqual(string.Empty, result.UninstallerUsed);
-        Assert.IsNotNull(result.FailureReason);
-        StringAssert.Contains(result.FailureReason, "Homebrew");
+        Assert.IsTrue(result.Success);
+        Assert.AreEqual("bash", result.UninstallerUsed);
+        CollectionAssert.AreEqual(
+            new[] { "-c", "rm -f \"$HOME/bin/devtunnel\"" },
+            (System.Collections.ICollection)executor.Invocations[1].Arguments
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -502,7 +506,7 @@ public sealed class DevTunnelCliInstallerTests
         FakeInstallerInvocation uninstallInvocation = executor.Invocations[0];
         Assert.AreEqual("bash", uninstallInvocation.FileName);
         CollectionAssert.AreEqual(
-            new[] { "-c", "rm -rf \"$HOME/.devtunnel\"" },
+            new[] { "-c", "rm -f \"$HOME/bin/devtunnel\"" },
             (System.Collections.ICollection)uninstallInvocation.Arguments
         );
     }
@@ -562,6 +566,50 @@ public sealed class DevTunnelCliInstallerTests
         Assert.AreEqual("No installed package found.", result.StandardError);
     }
 
+    [TestMethod]
+    public async Task InstallAsync_OnLinux_ReportsTheScriptsInstallPath()
+    {
+        FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
+        executor.EnqueueResult(new InstallerProcessResult(0, "curl 8.7.1", string.Empty));
+        executor.EnqueueResult(new InstallerProcessResult(0, "Installed", string.Empty));
+        string expected = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "bin",
+            "devtunnel"
+        );
+
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false,
+            fileExists: path => path == expected
+        );
+
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
+
+        Assert.IsTrue(result.Success);
+        Assert.AreEqual(expected, result.InstalledPath);
+    }
+
+    [TestMethod]
+    public async Task InstallAsync_WhenTheBinaryIsNotFound_ReportsNoPath()
+    {
+        FakeInstallerProcessExecutor executor = new FakeInstallerProcessExecutor();
+        executor.EnqueueResult(new InstallerProcessResult(0, "curl 8.7.1", string.Empty));
+        executor.EnqueueResult(new InstallerProcessResult(0, "Installed", string.Empty));
+
+        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+
+        DevTunnelCliInstallResult result = await installer
+            .InstallAsync(CancellationToken.None)
+            .ConfigureAwait(false);
+
+        Assert.IsTrue(result.Success);
+        Assert.IsNull(result.InstalledPath);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -569,12 +617,19 @@ public sealed class DevTunnelCliInstallerTests
     private static DevTunnelCliInstaller CreateInstaller(
         FakeInstallerProcessExecutor executor,
         bool isWindows,
-        bool isMacOS
+        bool isMacOS,
+        Func<string, bool>? fileExists = null
     )
     {
         DevTunnelCliInstallerOptions options = new DevTunnelCliInstallerOptions();
         FakePlatformDetector platformDetector = new FakePlatformDetector(isWindows, isMacOS);
-        return new DevTunnelCliInstaller(options, logger: null, executor, platformDetector);
+        return new DevTunnelCliInstaller(
+            options,
+            logger: null,
+            executor,
+            platformDetector,
+            fileExists ?? (static _ => false)
+        );
     }
 }
 

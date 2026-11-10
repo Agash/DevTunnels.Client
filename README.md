@@ -20,7 +20,7 @@ The `devtunnel` CLI must be installed. The library searches the following locati
 1. `DevTunnelsClientOptions.CliPathOverride` — explicit path set in code
 2. `DEVTUNNEL_CLI_PATH` environment variable
 3. Well-known install paths (checked by default, no PATH entry required):
-   - **Windows** — `%LOCALAPPDATA%\Microsoft\DevTunnels\`, `~/.devtunnels/bin/`, `~/bin/`
+   - **Windows** — `%LOCALAPPDATA%\Microsoft\DevTunnels\`, `%LOCALAPPDATA%\Microsoft\WinGet\Links\`, `~/.devtunnels/bin/`, `~/bin/`
    - **macOS** — `/opt/homebrew/bin/` (Homebrew), `/usr/local/bin/`, `~/bin/`
    - **Linux** — `~/.local/bin/`, `~/bin/`, `/usr/local/bin/`
 4. System `PATH`
@@ -139,7 +139,7 @@ Console.WriteLine($"Installer: {detected ?? "none"}");
 DevTunnelCliInstallResult result = await installer.InstallAsync();
 if (result.Success)
 {
-    Console.WriteLine($"Installed via {result.InstallerUsed}.");
+    Console.WriteLine($"Installed via {result.InstallerUsed} at {result.InstalledPath}.");
 }
 else
 {
@@ -151,10 +151,14 @@ Supported installers per platform:
 
 | Platform | Installer | Install command |
 |----------|-----------|-----------------|
-| Windows | `winget` | `winget install Microsoft.devtunnel` |
+| Windows | `winget` | `winget install Microsoft.devtunnel` (user scope, no elevation) |
 | macOS | `brew` | `brew install --cask devtunnel` |
-| Linux | `curl` | `curl -sL https://aka.ms/DevTunnelCliInstall \| bash` |
-| Linux | `wget` | `wget -qO- https://aka.ms/DevTunnelCliInstall \| bash` |
+| macOS without Homebrew, Linux | `curl` | `curl -sL https://aka.ms/DevTunnelCliInstall \| bash` |
+| macOS without Homebrew, Linux | `wget` | `wget -qO- https://aka.ms/DevTunnelCliInstall \| bash` |
+
+`InstalledPath` reports where the CLI landed. A fresh user-scope install is not on the running process's
+`PATH`, but every location above is in the client's search list, so `ProbeCliAsync()` finds it right away
+without a restart.
 
 Install it:
 

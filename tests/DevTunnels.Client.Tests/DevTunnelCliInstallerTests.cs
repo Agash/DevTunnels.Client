@@ -600,7 +600,11 @@ public sealed class DevTunnelCliInstallerTests
         executor.EnqueueResult(new InstallerProcessResult(0, "curl 8.7.1", string.Empty));
         executor.EnqueueResult(new InstallerProcessResult(0, "Installed", string.Empty));
 
-        DevTunnelCliInstaller installer = CreateInstaller(executor, isWindows: false, isMacOS: false);
+        DevTunnelCliInstaller installer = CreateInstaller(
+            executor,
+            isWindows: false,
+            isMacOS: false
+        );
 
         DevTunnelCliInstallResult result = await installer
             .InstallAsync(CancellationToken.None)
